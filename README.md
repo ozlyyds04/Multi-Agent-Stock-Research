@@ -25,6 +25,40 @@
 
 ---
 
+## 项目结构 | Project Structure
+
+```text
+multiagent-stock-research/
+├── src/
+│   ├── agents/                  # 智能体：数据 / 分析 / 合规 / 主管
+│   │                            # Agents: Data / Analyst / Compliance / Supervisor
+│   ├── graph/
+│   │   └── orchestrator.py      # LangGraph 编排：条件路由、修复/校验、审批边（HITL）
+│   │                            # LangGraph: conditional routing, repair/validate, approval edge
+│   ├── tools/                   # 数据工具：行情 / 基本面 / 新闻 / 绘图 / PDF
+│   │                            # Tools: prices / fundamentals / news / plot / PDF
+│   ├── guardrails/              # 输入规范化与输出中立性（中英提示词）
+│   │                            # Input normalization & output neutrality
+│   ├── ui/streamlit_app.py      # Streamlit Web UI：审批面板、可折叠报告
+│   │                            # Web UI: approval panel, collapsible report
+│   ├── api.py                   # FastAPI 后端（/analyze、/analyze/approve）
+│   ├── cli.py                   # 命令行入口 | CLI entrypoint
+│   └── config/settings.yaml     # 配置：LLM 提供方、严格模式、新闻源
+│                                # Config: LLM provider, strict mode, news sources
+├── tests/                       # 单元 / 集成 / e2e 测试（覆盖率 ≥ 70%）
+│                                # Unit / integration / e2e tests (coverage >= 70%)
+├── docs/
+│   ├── Multiagent.svg           # 架构图（SVG，GitHub 原生渲染）| Architecture diagram
+│   ├── architecture.md          # 架构说明（中英）| Architecture docs (bilingual)
+│   └── Screenshots/UI.png       # UI 截图 | UI screenshot
+├── pyproject.toml               # 依赖与项目元数据（uv）| Project metadata & deps
+├── uv.lock                      # 锁定依赖版本 | Locked dependency versions
+├── .env.example                 # 环境变量模板（.env 不入库）| Env template (.env ignored)
+└── README.md
+```
+
+---
+
 ## Why This Project Exists
 
 The world of financial research has evolved — analysts now rely on automation, AI, and real-time data instead of Excel sheets and manual fundamentals.  
@@ -606,6 +640,5 @@ uv run pytest tests/unit/agents/test_analyst_agent.py -v
 ---
 ## 参与贡献
 欢迎提交 PR！无论你是在修复 bug、改进 PDF 格式，还是添加新工具——提交 PR，一起构建更好的智能体工作流。
-
 
 
