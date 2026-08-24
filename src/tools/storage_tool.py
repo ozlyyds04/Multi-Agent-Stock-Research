@@ -9,7 +9,7 @@ logger = get_logger(__name__)
 
 def ensure_dir(p: str):
     os.makedirs(p, exist_ok=True)
-    logger.debug("Ensured directory exists: %s", p)
+    logger.debug("已确保目录存在：%s", p)
 
 
 def save_json(obj, outdir: str, filename: str):
@@ -17,7 +17,7 @@ def save_json(obj, outdir: str, filename: str):
     path = os.path.join(outdir, filename)
     with open(path, "w", encoding="utf-8") as f:
         json.dump(obj, f, indent=2)
-    logger.info("Saved JSON: %s", path)
+    logger.info("JSON 已保存：%s", path)
     return path
 
 
@@ -26,7 +26,7 @@ def save_markdown(content: str, outdir: str, filename: str):
     path = os.path.join(outdir, filename)
     with open(path, "w", encoding="utf-8") as f:
         f.write(content)
-    logger.info("Saved Markdown: %s", path)
+    logger.info("Markdown 已保存：%s", path)
     return path
 
 
@@ -34,5 +34,5 @@ def render_filename(template: str, symbol: str, date: str | None = None):
     if date is None:
         date = datetime.utcnow().strftime("%Y-%m-%d")
     fname = Template(template).render(symbol=symbol, date=date)
-    logger.debug("Rendered filename: %s", fname)
+    logger.debug("已渲染文件名：%s", fname)
     return fname

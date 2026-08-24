@@ -23,14 +23,14 @@ def test_cli_success(monkeypatch, capsys):
 
     # Assert: outputs printed
     out = capsys.readouterr().out
-    assert "== Outputs ==" in out
+    assert "== 输出 ==" in out
     assert "report: artifacts/MSFT/report.md" in out
 
 
 def test_cli_error_path(monkeypatch, capsys):
     # Arrange: fake run_pipeline error payload
     def fake_run_pipeline(symbol, days, outdir, human=False):
-        return {"status": "error", "reason": "Strict mode abort", "suggested_action": "Disable strict_mode"}
+        return {"status": "error", "reason": "严格模式中止", "suggested_action": "禁用 strict_mode"}
 
     monkeypatch.setattr(cli, "run_pipeline", fake_run_pipeline)
 
@@ -44,5 +44,5 @@ def test_cli_error_path(monkeypatch, capsys):
 
     # Assert
     out = capsys.readouterr().out
-    assert "[ERROR] Strict mode abort" in out
-    assert "Suggestion: Disable strict_mode" in out
+    assert "[错误] 严格模式中止" in out
+    assert "建议：禁用 strict_mode" in out

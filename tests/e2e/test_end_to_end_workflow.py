@@ -20,13 +20,13 @@ def test_e2e_workflow_creates_artifacts(monkeypatch, minimal_cfg, sample_bundle_
     monkeypatch.setattr("src.tools.plot_tool.save_price_plot", fake_plot)
 
     # Make PDF export a no-op but still create the file
-    def fake_convert_text(_md, _to, format, outputfile, extra_args):
-        with open(outputfile, "wb") as f:
+    def fake_export(_md_path, pdf_path):
+        with open(pdf_path, "wb") as f:
             f.write(b"%PDF-1.4\n%mock\n")
 
-    monkeypatch.setattr("pypandoc.convert_text", fake_convert_text)
+    monkeypatch.setattr("src.tools.pdf_tool.export_report_to_pdf", fake_export)
 
-    app = orchestrator.build_graph(minimal_cfg, fmp_api_key="demo")
+    app = orchestrator.build_graph(minimal_cfg)
     state = {"symbol": "AAPL", "days": 5, "outdir": str(outdir)}
     res = app.invoke(state)
 

@@ -11,7 +11,7 @@ T = TypeVar("T")
 
 
 class RetryableError(RuntimeError):
-    """Raise this to trigger a retry with backoff."""
+    """抛出此异常以触发带退避的重试。"""
     pass
 
 
@@ -21,9 +21,9 @@ class RetryConfig:
     base_delay_sec: float = 0.5
     backoff_factor: float = 2.0
     max_delay_sec: float = 8.0
-    jitter_ratio: float = 0.15  # 15% jitter
+    jitter_ratio: float = 0.15  # 15% 抖动
     retry_statuses: Sequence[int] = (408, 429, 500, 502, 503, 504)
-    timeout_sec: Optional[float] = None  # per-attempt timeout
+    timeout_sec: Optional[float] = None  # 每次尝试的超时
 
 
 def _sleep_with_jitter(seconds: float, jitter_ratio: float) -> None:
@@ -32,15 +32,15 @@ def _sleep_with_jitter(seconds: float, jitter_ratio: float) -> None:
 
 
 def _call_with_timeout(fn: Callable[[], T], timeout_sec: float) -> T:
-    # Thread-based timeout is sufficient for preventing stalls in production runs.
+    # 基于线程的超时足以防止生产运行中的卡死。
     with cf.ThreadPoolExecutor(max_workers=1) as ex:
         fut = ex.submit(fn)
         try:
             return fut.result(timeout=timeout_sec)
         except cf.TimeoutError as e:
-            # Convert to RetryableError so retry_call always retries timeouts reliably,
-            # regardless of what retry_exceptions the caller passes.
-            raise RetryableError(f"Operation timed out after {timeout_sec}s") from e
+            # 转换为 RetryableError，使 retry_call 无论调用方传入什么
+            # retry_exceptions，都能可靠地重试超时。
+            raise RetryableError(f"操作在 {timeout_sec} 秒后超时") from e
 
 
 def retry_call(
@@ -52,10 +52,10 @@ def retry_call(
         retry_exceptions: Iterable[Type[BaseException]] = (),
 ) -> T:
     """
-    Retry wrapper with exponential backoff + jitter + optional per-attempt timeout.
-    Retries when:
-      - fn raises RetryableError
-      - fn raises any exception in retry_exceptions
+    带指数退避 + 抖动 + 可选单次尝试超时的重试包装器。
+    在以下情况重试：
+      - fn 抛出 RetryableError
+      - fn 抛出 retry_exceptions 中的任何异常
     """
     retry_exceptions = tuple(retry_exceptions)
 
@@ -73,13 +73,13 @@ def retry_call(
         except retry_exceptions as e:
             last_exc = e
 
-        # no more retries
+        # 不再重试
         if attempt >= cfg.max_retries:
             break
 
         delay = min(cfg.max_delay_sec, cfg.base_delay_sec * (cfg.backoff_factor ** attempt))
         logger.warning(
-            "Retrying op=%s attempt=%d/%d in %.2fs due to: %s",
+            "正在重试 op=%s 第 %d/%d 次，%.2f 秒后，原因：%s",
             op_name,
             attempt + 1,
             cfg.max_retries + 1,
@@ -88,8 +88,8 @@ def retry_call(
         )
         _sleep_with_jitter(delay, cfg.jitter_ratio)
 
-    # exhausted
-    logger.error("Retries exhausted op=%s after %d attempts. Last error: %s", op_name, cfg.max_retries + 1,
+    # 重试已用尽
+    logger.error("op=%s 重试次数已用尽（共 %d 次）。最后错误：%s", op_name, cfg.max_retries + 1,
                  str(last_exc))
 
-    raise last_exc if last_exc else RuntimeError(f"retry_call failed for op={op_name}")
+    raise last_exc if last_exc else RuntimeError(f"op={op_name} 的 retry_call 执行失败")

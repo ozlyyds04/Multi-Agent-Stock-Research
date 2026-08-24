@@ -10,6 +10,11 @@ __pycache__/
 .env
 .pytest_cache
 logs/*
+.pytest_tmp/
+artifacts/
+.streamlit/
+*.log
 .coveragerc
 .coverage
 .pytest_cache/*
+.cache/

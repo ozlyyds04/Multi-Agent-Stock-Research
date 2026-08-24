@@ -3,7 +3,10 @@ import os
 import re
 from dataclasses import dataclass
 
-_TICKER_RE = re.compile(r"^[A-Z0-9.\-]{1,10}$")  # allow BRK.B, RDS-A, etc.
+_TICKER_RE = re.compile(r"^[A-Z0-9.\-]{1,10}$")  # 允许 BRK.B、RDS-A 等
+_CN6_RE = re.compile(r"^\d{6}$")  # A 股 6 位代码
+_HK_RE = re.compile(r"^\d{4,5}$")  # 港股：1810 / 0700 / 00700
+_HK_SUFFIX_RE = re.compile(r"^(\d{4,5})\.HK$")  # 港股带后缀：1810.HK / 00700.HK / 9988.HK
 
 @dataclass(frozen=True)
 class ValidatedRequest:
@@ -12,36 +15,60 @@ class ValidatedRequest:
     outdir: str
 
 
+def normalize_symbol(symbol: str) -> str:
+    """
+    规范化股票代码：
+    - A 股 6 位裸代码自动补交易所后缀（6/9 开头 → 沪市 .SHH；0/2/3 开头 → 深市 .SHZ）
+    - 港股统一为 5 位补零裸代码（1810/0700/00700/1810.HK/9988.HK → 01810/00700/09988）
+    - 已带后缀或非 A 股代码原样返回
+    """
+    s = str(symbol or "").strip().upper()
+    hk_match = _HK_RE.match(s)
+    if hk_match:
+        return f"{int(hk_match.group(0)):05d}"
+    hk_match = _HK_SUFFIX_RE.match(s)
+    if hk_match:
+        return f"{int(hk_match.group(1)):05d}"
+    if not s or "." in s or ":" in s:
+        return s
+    if _CN6_RE.match(s):
+        if s[0] in ("6", "9"):
+            return f"{s}.SHH"
+        if s[0] in ("0", "2", "3"):
+            return f"{s}.SHZ"
+    return s
+
+
 def sanitize_symbol(symbol: str) -> str:
     if symbol is None:
-        raise ValueError("symbol is required")
+        raise ValueError("缺少股票代码参数")
     s = str(symbol).strip().upper()
-    s = s.replace("/", ".")  # defensive normalization
+    s = s.replace("/", ".")  # 防御性规范化
     if not _TICKER_RE.match(s):
         raise ValueError(
-            "Invalid symbol format. Allowed: 1-10 chars [A-Z0-9.-] (examples: AAPL, BRK.B)."
+            "股票代码格式无效。允许：1-10 个字符 [A-Z0-9.-]（示例：AAPL、BRK.B）。"
         )
-    return s
+    return normalize_symbol(s)
 
 
 def sanitize_days(days: int, *, min_days: int = 1, max_days: int = 10) -> int:
     try:
         d = int(days)
     except Exception:
-        raise ValueError("days must be an integer")
+        raise ValueError("天数必须是整数")
 
     if d < min_days or d > max_days:
-        raise ValueError(f"days out of range ({min_days}-{max_days})")
+        raise ValueError(f"天数超出范围（{min_days}-{max_days}）")
     return d
 
 
 def sanitize_outdir(outdir: str) -> str:
     if outdir is None:
-        raise ValueError("outdir is required")
+        raise ValueError("缺少输出目录参数")
     base = os.path.abspath(str(outdir).strip())
-    # Prevent weird characters and accidental root writes
+    # 防止异常字符和意外的根目录写入
     if any(c in base for c in ["\0", "\n", "\r"]):
-        raise ValueError("outdir contains invalid characters")
+        raise ValueError("输出目录包含无效字符")
     return base
 
 

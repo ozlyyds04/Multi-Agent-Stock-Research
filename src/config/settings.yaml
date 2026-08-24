@@ -11,8 +11,8 @@ StrictMode:
   strict_mode: true
 
 llm:
-  provider: "openai"         # Swap: "ollama", "anthropic", etc. via LangChain
-  model: "gpt-5"       # or "gpt-4o", "gpt-4o-mini-2024-07-18", etc.
+  provider: "deepseek"         # 当前默认：DeepSeek；可切回 "openai"（官方 OpenAI）
+  model: "deepseek-v4-flash"
   temperature: 1
 
 report:
@@ -32,7 +32,7 @@ compliance:
     - "100% profit"
   disclosure:
     - "This report is for informational purposes only and not investment advice."
-    - "Data sources: yfinance (free), FinancialModelingPrep (demo), public RSS feeds."
+    - "Data sources: Alpha Vantage, AKShare, public RSS feeds."
     - "Past performance does not guarantee future results."
 
 news:

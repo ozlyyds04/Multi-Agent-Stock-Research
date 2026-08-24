@@ -3,6 +3,11 @@ from dataclasses import dataclass
 import pytest
 
 
+# Hermetic test env: ChatDeepSeek/ChatOpenAI require a key at construction,
+# but agent runs are mocked, so a placeholder key is enough for graph builds.
+os.environ.setdefault("DEEPSEEK_API_KEY", "test-key")
+
+
 @dataclass
 class DummyMsg:
     content: str
@@ -76,7 +81,7 @@ def minimal_cfg(tmp_path):
     Keep strict_mode false to avoid aborting on missing third-party data.
     """
     return {
-        "llm": {"provider": "openai", "model": "gpt-5", "temperature": 1, "max_tokens": 4500},
+        "llm": {"provider": "deepseek", "model": "deepseek-v4-flash", "temperature": 1, "max_tokens": 4500},
         "news": {"sources": ["https://example.com/rss?s={{symbol}}"]},
         "orchestration": {"max_news": 5, "timeout_sec": 90, "price_days_default": 30},
         "report": {"filename_template": "{{symbol}}_{{date}}_report.md", "outdir": str(tmp_path)},
@@ -96,6 +101,8 @@ def pytest_configure(config):
     # Ensure these are set before any imports during tests
     os.environ.setdefault("PYTHONBREAKPOINT", "0")
     os.environ.setdefault("MPLBACKEND", "Agg")
+    # 测试始终使用内存 checkpointer，避免依赖 PostgreSQL 实例
+    os.environ["CHECKPOINTER"] = "memory"
 
 
 @pytest.fixture(autouse=True)
@@ -125,14 +132,16 @@ def _block_external_processes(monkeypatch, tmp_path):
 
     monkeypatch.setattr(subprocess, "run", _dummy_run, raising=True)
 
-    # --- Fake pypandoc conversion if it is imported ---
+    # --- Fake fpdf2 PDF export if it is imported ---
     try:
-        import pypandoc  # noqa
-        def _fake_convert_text(_md, _to, format, outputfile, extra_args=None, **kwargs):
-            with open(outputfile, "wb") as f:
+        from src.tools import pdf_tool
+
+        def _fake_export(_md_path, pdf_path):
+            with open(pdf_path, "wb") as f:
                 f.write(b"%PDF-1.4\n%mock\n")
-            return ""
-        monkeypatch.setattr(pypandoc, "convert_text", _fake_convert_text, raising=True)
+            return pdf_path
+
+        monkeypatch.setattr(pdf_tool, "export_report_to_pdf", _fake_export, raising=True)
     except Exception:
         pass
 

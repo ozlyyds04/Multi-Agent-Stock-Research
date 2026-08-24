@@ -14,8 +14,8 @@ class ContextFilter(logging.Filter):
 
 def get_logger(name: str):
     """
-    Create or return a configured logger with both console and rotating file handlers.
-    Logs are stored at logs/app.log (max 5 MB, 3 backups).
+    创建或返回同时带控制台和轮转文件处理器的已配置日志器。
+    日志存储在 logs/app.log（最大 5 MB，3 个备份）。
     """
     log_dir = os.path.join(os.getcwd(), "logs")
     os.makedirs(log_dir, exist_ok=True)
@@ -23,16 +23,16 @@ def get_logger(name: str):
 
     logger = logging.getLogger(name)
     if logger.handlers:
-        return logger  # Avoid duplicate handlers
+        return logger  # 避免重复添加处理器
 
     level = os.getenv("LOG_LEVEL", "INFO").upper()
     logger.setLevel(level)
 
-    # Console Handler
+    # 控制台处理器
     ch = logging.StreamHandler()
     ch.setLevel(level)
 
-    # Rotating File Handler
+    # 轮转文件处理器
     fh = RotatingFileHandler(log_file, maxBytes=5 * 1024 * 1024, backupCount=3, encoding="utf-8")
     fh.setLevel(level)
 
