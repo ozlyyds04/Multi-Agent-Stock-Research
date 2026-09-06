@@ -362,7 +362,7 @@ AAPL_raw.json
 - 通过 pytest-cov 为核心模块启用覆盖率报告。
 ### 运行测试 + 覆盖率
 ```bash
-# 运行全部离线测试 + 覆盖率（阈值 65%，pytest.ini 已配置）
+# 运行全部离线测试 + 覆盖率（阈值 ≥70%，pytest.ini 已配置）
 uv run pytest tests --ignore=tests/e2e
 ```
 ### 运行单个测试文件
