@@ -18,3 +18,14 @@ artifacts/
 .coverage
 .pytest_cache/*
 .cache/
+frontend/node_modules/
+frontend/dist/
+
+# 前端本地环境变量（VITE_API_KEY 会被内联进构建产物，绝不能入库）
+frontend/.env.local
+frontend/.env.development
+frontend/.env.production
+
+# Windows 系统文件
+Thumbs.db
+desktop.ini

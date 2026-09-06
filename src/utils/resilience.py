@@ -12,6 +12,7 @@ T = TypeVar("T")
 
 class RetryableError(RuntimeError):
     """抛出此异常以触发带退避的重试。"""
+
     pass
 
 
@@ -32,8 +33,10 @@ def _sleep_with_jitter(seconds: float, jitter_ratio: float) -> None:
 
 
 def _call_with_timeout(fn: Callable[[], T], timeout_sec: float) -> T:
-    # 基于线程的超时足以防止生产运行中的卡死。
-    with cf.ThreadPoolExecutor(max_workers=1) as ex:
+    # 超时后 shutdown(wait=False)：绝不能用 with 块（退出时 shutdown(wait=True)
+    # 会继续阻塞到任务真正结束，超时就失去了意义）。超时的线程让它自行消亡。
+    ex = cf.ThreadPoolExecutor(max_workers=1, thread_name_prefix="timeout-call")
+    try:
         fut = ex.submit(fn)
         try:
             return fut.result(timeout=timeout_sec)
@@ -41,15 +44,17 @@ def _call_with_timeout(fn: Callable[[], T], timeout_sec: float) -> T:
             # 转换为 RetryableError，使 retry_call 无论调用方传入什么
             # retry_exceptions，都能可靠地重试超时。
             raise RetryableError(f"操作在 {timeout_sec} 秒后超时") from e
+    finally:
+        ex.shutdown(wait=False, cancel_futures=True)
 
 
 def retry_call(
-        fn: Callable[[], T],
-        *,
-        cfg: RetryConfig,
-        op_name: str,
-        logger,
-        retry_exceptions: Iterable[Type[BaseException]] = (),
+    fn: Callable[[], T],
+    *,
+    cfg: RetryConfig,
+    op_name: str,
+    logger,
+    retry_exceptions: Iterable[Type[BaseException]] = (),
 ) -> T:
     """
     带指数退避 + 抖动 + 可选单次尝试超时的重试包装器。
@@ -77,7 +82,7 @@ def retry_call(
         if attempt >= cfg.max_retries:
             break
 
-        delay = min(cfg.max_delay_sec, cfg.base_delay_sec * (cfg.backoff_factor ** attempt))
+        delay = min(cfg.max_delay_sec, cfg.base_delay_sec * (cfg.backoff_factor**attempt))
         logger.warning(
             "正在重试 op=%s 第 %d/%d 次，%.2f 秒后，原因：%s",
             op_name,
@@ -89,7 +94,6 @@ def retry_call(
         _sleep_with_jitter(delay, cfg.jitter_ratio)
 
     # 重试已用尽
-    logger.error("op=%s 重试次数已用尽（共 %d 次）。最后错误：%s", op_name, cfg.max_retries + 1,
-                 str(last_exc))
+    logger.error("op=%s 重试次数已用尽（共 %d 次）。最后错误：%s", op_name, cfg.max_retries + 1, str(last_exc))
 
     raise last_exc if last_exc else RuntimeError(f"op={op_name} 的 retry_call 执行失败")

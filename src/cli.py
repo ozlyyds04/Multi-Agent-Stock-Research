@@ -1,6 +1,7 @@
 import argparse
 import os
 from src.graph.orchestrator import run_pipeline
+from src.guardrails.inputs import DEFAULT_DAYS
 from src.utils.logger import get_logger
 
 logger = get_logger(__name__)
@@ -9,7 +10,7 @@ logger = get_logger(__name__)
 def main():
     parser = argparse.ArgumentParser(description="自动股票市场研究（LangGraph 多智能体）")
     parser.add_argument("--symbol", required=True, help="要分析的股票代码（例如 AAPL、MSFT）")
-    parser.add_argument("--days", type=int, default=30, help="要分析的过去交易日数量")
+    parser.add_argument("--days", type=int, default=DEFAULT_DAYS, help="要分析的过去交易日数量")
     parser.add_argument("--outdir", default="artifacts", help="用于存储产物的输出目录")
     parser.add_argument("--human", default="false", help="启用人工在回路审核（true/false）")
     args = parser.parse_args()

@@ -9,28 +9,42 @@ logger = get_logger(__name__)
 
 def _is_retryable_llm_exc(e: Exception) -> bool:
     msg = str(e).lower()
-    return any(k in msg for k in [
-        "timeout", "timed out", "rate limit", "429",
-        "temporarily", "unavailable", "502", "503", "504",
-        "connection", "server error"
-    ])
+    return any(
+        k in msg
+        for k in [
+            "timeout",
+            "timed out",
+            "rate limit",
+            "429",
+            "temporarily",
+            "unavailable",
+            "502",
+            "503",
+            "504",
+            "connection",
+            "server error",
+        ]
+    )
 
 
 class SupervisorAgent:
     def __init__(self, llm: ChatOpenAI | ChatDeepSeek):
         self.llm = llm
-        self.prompt = ChatPromptTemplate.from_messages([
-            ("system",
-             "你是专业股票研究报告的总编辑和最终审核人。"
-             "你不生成原始分析。你负责评估、重构并定稿其他智能体生成的内容。你的职责包括：\n"
-             "- 确保所有章节完整且撰写专业\n"
-             "- 删除任何不完整、重复或低质量的章节\n"
-             "- 执行清晰规范的机构级研究报告结构\n"
-             "- 跳过任何无法完整成文的章节\n\n"
-             "你绝不允许输出不完整的章节、占位符或未完成的标题。"
-             ),
-            ("user",
-             """输入：
+        self.prompt = ChatPromptTemplate.from_messages(
+            [
+                (
+                    "system",
+                    "你是专业股票研究报告的总编辑和最终审核人。"
+                    "你不生成原始分析。你负责评估、重构并定稿其他智能体生成的内容。你的职责包括：\n"
+                    "- 确保所有章节完整且撰写专业\n"
+                    "- 删除任何不完整、重复或低质量的章节\n"
+                    "- 执行清晰规范的机构级研究报告结构\n"
+                    "- 跳过任何无法完整成文的章节\n\n"
+                    "你绝不允许输出不完整的章节、占位符或未完成的标题。",
+                ),
+                (
+                    "user",
+                    """输入：
              - 股票代码：{symbol}
              - 数据摘要：{data_summary}
              - 合规备注：{final_note}
@@ -57,9 +71,10 @@ class SupervisorAgent:
              - 数据来源
 
              只输出最终报告。
-             """
-             )
-        ])
+             """,
+                ),
+            ]
+        )
         self.retry_cfg = RetryConfig(max_retries=2, base_delay_sec=0.6, max_delay_sec=6.0, timeout_sec=120.0)
         logger.info("主管智能体已初始化。")
 

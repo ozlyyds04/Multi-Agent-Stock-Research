@@ -2,7 +2,6 @@ import feedparser
 import re
 import requests
 import calendar
-import time as _time
 from datetime import datetime, timedelta, timezone
 from typing import List, Dict, Optional, Tuple
 from urllib.parse import urlencode
@@ -11,6 +10,7 @@ from jinja2 import Template
 from src.utils.logger import get_logger
 from src.utils.resilience import RetryConfig, retry_call, RetryableError
 from src.tools.hk_tool import is_hk_symbol, to_hk_bare
+from src.runtime.ratelimit import check_rate_limit, RateLimitExceeded
 
 logger = get_logger(__name__)
 
@@ -21,6 +21,7 @@ _HK_COMPANY_CACHE: Dict[str, str] = {}
 
 class NonRetryableHTTPError(RuntimeError):
     """不应重试的 HTTP 错误（例如 404/401/403）。"""
+
     pass
 
 
@@ -34,6 +35,11 @@ def _fetch_em_announcements(symbol: str, max_items: int = 6) -> List[Dict]:
     """
     bare = _bare_symbol(symbol)
     try:
+        try:
+            check_rate_limit("eastmoney")
+        except RateLimitExceeded as e:
+            logger.warning("东财公告请求被本地限流：%s", e)
+            return []
         r = requests.get(
             _EM_ANNOUNCE_URL,
             params={
@@ -56,13 +62,15 @@ def _fetch_em_announcements(symbol: str, max_items: int = 6) -> List[Dict]:
                 continue
             code = str(it.get("art_code") or "")
             link = f"https://data.eastmoney.com/notices/detail/{bare}/{code}.html" if code else ""
-            out.append({
-                "title": title,
-                "link": link,
-                "published": str(it.get("display_time") or it.get("notice_date") or "")[:19],
-                "summary": "",
-                "source": "东方财富公告",
-            })
+            out.append(
+                {
+                    "title": title,
+                    "link": link,
+                    "published": str(it.get("display_time") or it.get("notice_date") or "")[:19],
+                    "summary": "",
+                    "source": "东方财富公告",
+                }
+            )
         return out[:max_items]
     except Exception as e:
         logger.warning("获取 %s 的东方财富公告失败：%s", bare, e)
@@ -70,12 +78,18 @@ def _fetch_em_announcements(symbol: str, max_items: int = 6) -> List[Dict]:
 
 
 def _fetch_bytes(
-        url: str,
-        *,
-        timeout: Tuple[float, float] = (3.05, 12.0),
-        retry_cfg: Optional[RetryConfig] = None,
+    url: str,
+    *,
+    timeout: Tuple[float, float] = (3.05, 12.0),
+    retry_cfg: Optional[RetryConfig] = None,
 ) -> bytes:
     cfg = retry_cfg or RetryConfig()
+    # 主动限流：超过配额时快速失败，不进入重试（重试对限流无意义）
+    try:
+        check_rate_limit("news")
+    except RateLimitExceeded as e:
+        logger.warning("新闻请求被本地限流：%s", e)
+        raise NonRetryableHTTPError("429（本地限流）")
 
     def _do():
         r = requests.get(url, timeout=timeout)
@@ -104,6 +118,12 @@ def _fetch_hk_company_name(bare: str) -> str:
     if bare in _HK_COMPANY_CACHE:
         return _HK_COMPANY_CACHE[bare]
     try:
+        try:
+            check_rate_limit("eastmoney")
+        except RateLimitExceeded as e:
+            logger.warning("东财公司名请求被本地限流：%s", e)
+            _HK_COMPANY_CACHE[bare] = ""
+            return ""
         import akshare as ak
 
         df = ak.stock_hk_company_profile_em(symbol=bare)
@@ -120,20 +140,22 @@ def _fetch_hk_company_name(bare: str) -> str:
 
 
 def _fetch_google_news(
-        query: str,
-        max_items: int = 6,
-        *,
-        hl: str = "en-US",
-        gl: str = "US",
-        ceid: str = "US:en",
+    query: str,
+    max_items: int = 6,
+    *,
+    hl: str = "en-US",
+    gl: str = "US",
+    ceid: str = "US:en",
 ) -> List[Dict]:
     """用关键词检索 Google News RSS，作为免费新闻源的稳定兜底。"""
-    url = "https://news.google.com/rss/search?" + urlencode({
-        "q": query,
-        "hl": hl,
-        "gl": gl,
-        "ceid": ceid,
-    })
+    url = "https://news.google.com/rss/search?" + urlencode(
+        {
+            "q": query,
+            "hl": hl,
+            "gl": gl,
+            "ceid": ceid,
+        }
+    )
     try:
         content = _fetch_bytes(url, retry_cfg=RetryConfig(max_retries=1, base_delay_sec=0.5, max_delay_sec=1.0))
         feed = feedparser.parse(content)
@@ -146,14 +168,16 @@ def _fetch_google_news(
                     pub_dt = datetime.fromtimestamp(calendar.timegm(pp), tz=timezone.utc)
                 except Exception:
                     pub_dt = None
-            items.append({
-                "title": getattr(e, "title", ""),
-                "link": getattr(e, "link", ""),
-                "published": getattr(e, "published", ""),
-                "summary": getattr(e, "summary", ""),
-                "source": "Google 新闻",
-                "_dt": pub_dt,
-            })
+            items.append(
+                {
+                    "title": getattr(e, "title", ""),
+                    "link": getattr(e, "link", ""),
+                    "published": getattr(e, "published", ""),
+                    "summary": getattr(e, "summary", ""),
+                    "source": "Google 新闻",
+                    "_dt": pub_dt,
+                }
+            )
 
         # 优先返回近期新闻：近 90 天内有足够条目时过滤旧闻，否则全部保留并新→旧排序
         cutoff = datetime.now(timezone.utc) - timedelta(days=90)
@@ -185,11 +209,11 @@ def _fetch_hk_news(symbol: str, max_items: int = 6) -> List[Dict]:
 
 
 def fetch_news_feeds(
-        symbol: str,
-        rss_templates: List[str],
-        max_items: int = 6,
-        timeout: Tuple[float, float] = (3.05, 12.0),
-        retry_cfg: Optional[RetryConfig] = None,
+    symbol: str,
+    rss_templates: List[str],
+    max_items: int = 6,
+    timeout: Tuple[float, float] = (3.05, 12.0),
+    retry_cfg: Optional[RetryConfig] = None,
 ) -> List[Dict]:
     # A 股：使用东方财富公告接口（RSS 源均为美股源）
     if _CN_RE.match((symbol or "").strip().upper()):
@@ -223,12 +247,14 @@ def fetch_news_feeds(
             feed = feedparser.parse(content)
 
             for e in feed.entries[:max_items]:
-                items.append({
-                    "title": getattr(e, "title", ""),
-                    "link": getattr(e, "link", ""),
-                    "published": getattr(e, "published", ""),
-                    "summary": getattr(e, "summary", ""),
-                })
+                items.append(
+                    {
+                        "title": getattr(e, "title", ""),
+                        "link": getattr(e, "link", ""),
+                        "published": getattr(e, "published", ""),
+                        "summary": getattr(e, "summary", ""),
+                    }
+                )
 
             logger.debug("已从 %s 获取 %d 条新闻", url, min(len(feed.entries), max_items))
 

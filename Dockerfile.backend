@@ -1,0 +1,37 @@
+FROM python:3.11-slim
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    MPLBACKEND=Agg \
+    PYTHONBREAKPOINT=0
+
+WORKDIR /app
+
+# 系统依赖：libpq 运行时 + 中文字体（matplotlib 图表）
+RUN apt-get update && apt-get install -y --no-install-recommends \
+      libpq5 curl fonts-noto-cjk \
+    && rm -rf /var/lib/apt/lists/*
+
+# 依赖层独立缓存：只有 requirements.txt 变化才重装依赖，源码改动不触发
+COPY requirements.txt ./
+# BuildKit 缓存挂载：pip 下载的 wheel 缓存到构建缓存，跨构建复用，避免每次重下全部依赖
+# （注意：不能设置 PIP_NO_CACHE_DIR，否则缓存挂载失效）
+RUN --mount=type=cache,target=/root/.cache/pip pip install -r requirements.txt
+
+COPY pyproject.toml README.md ./
+COPY src ./src
+COPY sitecustomize.py ./
+
+# 只装本地包（不再解析依赖），源码变化时重建很快
+RUN pip install --no-cache-dir --no-deps . \
+    && useradd --create-home --uid 1000 appuser \
+    && mkdir -p /app/artifacts /app/logs \
+    && chown -R appuser:appuser /app
+
+USER appuser
+
+EXPOSE 8000
+HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
+    CMD curl -f http://localhost:8000/health || exit 1
+
+CMD ["uvicorn", "src.api:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "1"]

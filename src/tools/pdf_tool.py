@@ -16,9 +16,9 @@ MARGIN_MM = 20.0
 CONTENT_W_MM = PAGE_W_MM - 2 * MARGIN_MM
 
 _FONT_CANDIDATES = [
-    ("msyh", r"C:\Windows\Fonts\msyh.ttc", r"C:\Windows\Fonts\msyhbd.ttc"),      # 微软雅黑
-    ("simhei", r"C:\Windows\Fonts\simhei.ttf", None),                            # 黑体
-    ("simsun", r"C:\Windows\Fonts\simsun.ttc", None),                            # 宋体
+    ("msyh", r"C:\Windows\Fonts\msyh.ttc", r"C:\Windows\Fonts\msyhbd.ttc"),  # 微软雅黑
+    ("simhei", r"C:\Windows\Fonts\simhei.ttf", None),  # 黑体
+    ("simsun", r"C:\Windows\Fonts\simsun.ttc", None),  # 宋体
     ("noto", "/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc", None),
     ("pingfang", "/System/Library/Fonts/PingFang.ttc", None),
 ]
@@ -40,6 +40,9 @@ class _ReportPDF(FPDF):
         bold = _font_bold()
         if bold:
             self.add_font(font_family, "B", bold)
+        else:
+            # 找不到独立粗体字体时，用常规字体注册 "B" 样式，避免 set_font("B") 报 Undefined font
+            self.add_font(font_family, "B", _font_regular())
 
     def footer(self):
         self.set_y(-14)
@@ -128,7 +131,7 @@ def _rich_segments(text: str):
     pos = 0
     for m in re.finditer(r"\*\*(.+?)\*\*|\[([^\]]+)\]\(([^)]+)\)", text):
         if m.start() > pos:
-            yield ("normal", text[pos:m.start()], None)
+            yield ("normal", text[pos : m.start()], None)
         if m.group(1) is not None:
             yield ("bold", m.group(1), None)
         else:
@@ -155,6 +158,23 @@ def _render_rich(pdf: _ReportPDF, text: str, size: float, line_h: float, indent:
     pdf.set_text_color(20, 20, 20)
 
 
+def _safe_image_src(src: str, base_dir: str) -> Optional[str]:
+    """
+    校验图片路径：src 来自 LLM 生成的 Markdown（不可信内容），
+    必须限制在报告所在目录内且为本地 png/jpg——否则既可能把服务器
+    任意本地文件嵌入 PDF 外泄，也可能通过 http(s) URL 触发 SSRF（fpdf2 会自动下载）。
+    """
+    if not src or re.match(r"^[a-zA-Z][a-zA-Z0-9+.-]*://", src) or src.startswith("//"):
+        return None
+    if not re.search(r"\.(png|jpe?g)$", src, re.IGNORECASE):
+        return None
+    candidate = os.path.realpath(src if os.path.isabs(src) else os.path.join(base_dir, src))
+    base_real = os.path.realpath(base_dir)
+    if not candidate.startswith(base_real + os.sep):
+        return None
+    return candidate
+
+
 def export_report_to_pdf(md_path: str, pdf_path: str) -> str:
     """
     用 fpdf2 把 Markdown 研究报告渲染为 PDF（纯 Python，无需 pandoc/wkhtmltopdf）。
@@ -163,6 +183,7 @@ def export_report_to_pdf(md_path: str, pdf_path: str) -> str:
     with open(md_path, "r", encoding="utf-8") as f:
         md = f.read()
 
+    base_dir = os.path.dirname(os.path.abspath(md_path))
     pdf = _ReportPDF("CJK")
     pdf.add_page()
 
@@ -192,10 +213,11 @@ def export_report_to_pdf(md_path: str, pdf_path: str) -> str:
         elif kind == "image":
             src, caption = content.split("|", 1)
             src = src.strip()
-            if os.path.exists(src):
+            resolved = _safe_image_src(src, base_dir)
+            if resolved and os.path.exists(resolved):
                 pdf.ln(3)
                 w = min(CONTENT_W_MM, 130.0)
-                pdf.image(src, x=(PAGE_W_MM - w) / 2, w=w)
+                pdf.image(resolved, x=(PAGE_W_MM - w) / 2, w=w)
                 if caption:
                     pdf.set_font(pdf.font_family, "B", 10)
                     pdf.set_text_color(90, 90, 90)
@@ -203,7 +225,7 @@ def export_report_to_pdf(md_path: str, pdf_path: str) -> str:
                     pdf.ln(3)
                 pdf.set_text_color(20, 20, 20)
             else:
-                logger.warning("PDF 图表文件不存在，跳过：%s", src)
+                logger.warning("PDF 图表不可用（不存在或路径被拒绝），跳过：%s", src)
         pdf.set_text_color(20, 20, 20)
 
     out_dir = os.path.dirname(pdf_path)

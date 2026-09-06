@@ -103,6 +103,8 @@ def pytest_configure(config):
     os.environ.setdefault("MPLBACKEND", "Agg")
     # 测试始终使用内存 checkpointer，避免依赖 PostgreSQL 实例
     os.environ["CHECKPOINTER"] = "memory"
+    # 测试始终让 runs 注册表走纯内存，避免依赖 PostgreSQL 实例
+    os.environ.pop("DATABASE_URL", None)
 
 
 @pytest.fixture(autouse=True)
@@ -111,6 +113,39 @@ def _block_external_processes(monkeypatch, tmp_path):
     Prevent any external binary invocation (wkhtmltopdf/pandoc/etc.)
     and make PDF/chart creation deterministic.
     """
+    # 清空数据智能体的基本面缓存，避免不同用例间复用同一股票的数据
+    try:
+        from src.agents.data_agent import reset_fund_cache
+
+        reset_fund_cache()
+    except Exception:
+        pass
+    # 清空事件总线 / 缓存 / 短期记忆单例，避免跨用例串数据
+    try:
+        from src.runtime.backends import reset_backends
+
+        reset_backends()
+    except Exception:
+        pass
+    # 重置主动限流器计数，避免跨用例触及配额
+    try:
+        from src.runtime.ratelimit import reset_rate_limiter
+
+        reset_rate_limiter()
+    except Exception:
+        pass
+    # 重置长期记忆与嵌入器，避免跨用例共享记忆 / 嵌入选型
+    try:
+        from src.runtime.memory import reset_memory_store
+        from src.runtime.embedder import reset_embedder
+
+        reset_memory_store()
+        reset_embedder()
+        from src.runtime.summarizer import reset_summarizer
+
+        reset_summarizer()
+    except Exception:
+        pass
 
     # --- Block subprocess calls globally ---
     class _DummyPopen:

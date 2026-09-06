@@ -1,82 +1,3 @@
-## Architecture – MultiAgent Stock Research System
-
-This document describes the current architecture of the MultiAgent Stock Research system — a LangGraph-powered pipeline for automated equity analysis, multi-market data collection, human-in-the-loop approval, and full Markdown/PDF reporting.
-
----
-### High-Level Overview
-
-The pipeline is a LangGraph state graph with **conditional routing** and **checkpointing**:
-
-- A **repair path** retries missing critical data before analysis;
-- The **Analyst Agent** can call data tools itself when inputs are incomplete;
-- An optional **human approval edge** pauses the run (via `interrupt`) and persists state to PostgreSQL;
-- Rejections loop back to the analyst with feedback (max 3 rounds).
-
-#### Agents & Nodes
-
-| Agent / Node           | Responsibilities                                                        |
-| ---------------------- | ----------------------------------------------------------------------- |
-| **Data Agent**         | Fetches prices, fundamentals, news (US / A-share / HK)                   |
-| **Repair Node**        | Re-fetches missing prices / income statement / key metrics              |
-| **Validate Node**      | Enforces strict mode or degrades with warnings                          |
-| **Analyst Agent**      | Generates commentary; calls `fetch_quote` / price / fundamentals tools when data is missing |
-| **Compliance Agent**   | Neutrality filter + forbidden-phrase removal + disclosures              |
-| **Approval Edge**      | `interrupt` HITL: approve / reject / edit, state persisted in Postgres  |
-| **Supervisor Agent**   | Final report assembly (heading normalization, daily metrics)            |
-
----
-### Flow Diagram
-
-```mermaid
-flowchart TD
-    A["用户输入：股票代码 + 天数"] --> B["数据智能体 收集数据<br/>Alpha Vantage / AKShare / Google News"]
-    B -->|"数据完整"| C["分析智能体<br/>工具调用补数"]
-    B -->|"关键数据缺失"| R["修复节点 repair_data"]
-    R -->|"修复成功"| C
-    R -->|"仍缺失"| V["校验节点 validate_data<br/>严格模式中止 / 降级继续"]
-    V -->|"非严格"| C
-    C --> D["合规智能体"]
-    D -->|"未开启审批"| S["主管智能体 生成报告"]
-    D -->|"开启审批"| AP["人工审批边 interrupt<br/>PostgreSQL 持久化"]
-    AP -->|"批准 / 修改"| S
-    AP -->|"驳回（≤3 次）"| C
-    S --> E["产物导出<br/>Markdown + PDF + 图表 + raw.json"]
-```
-
----
-### Module Breakdown
-
-| Module                        | Description                                                       |
-| ----------------------------- | ----------------------------------------------------------------- |
-| `src/agents/*.py`             | Data / Analyst / Compliance / Supervisor agents                  |
-| `src/graph/orchestrator.py`   | LangGraph builder, conditional routing, approval edge, pipeline  |
-| `src/tools/*.py`              | price / quote / hk / fundamentals / news / plot / pdf tools      |
-| `src/utils/checkpointer.py`   | PostgreSQL checkpointer (falls back to in-memory)                |
-| `src/api.py`                  | FastAPI backend (`/analyze`, `/analyze/approve`)                 |
-| `src/ui/streamlit_app.py`     | Streamlit web UI (collapsible report sections, approval panel)   |
-| `src/cli.py`                  | CLI entry-point                                                  |
-| `config/settings.yaml`        | LLM provider, strict mode, news sources, orchestration settings  |
-
----
-#### Supported Modes
-
-| Mode      | Behavior                                                          |
-| --------- | ----------------------------------------------------------------- |
-| `strict`  | Pipeline stops if critical data is still missing after repair     |
-| `relaxed` | Fills gaps with warnings / “N/A” and continues                    |
-| HITL      | Optional approval edge; state persisted in PostgreSQL for resume  |
-
-To override strict behavior, edit:
-```yaml
-# config/settings.yaml
-StrictMode:
-  strict_mode: false
-```
-
----
-
-# 中文版（全文翻译）| Chinese Version
-
 ## 架构——多智能体股票研究系统
 
 本文档描述多智能体股票研究系统的当前架构——一个由 LangGraph 驱动的流水线，支持多市场数据采集、条件路由、人工审批（HITL）以及完整的 Markdown/PDF 报告输出。
@@ -131,12 +52,31 @@ flowchart TD
 | `src/graph/orchestrator.py` | LangGraph 构建、条件路由、审批边、流水线 |
 | `src/tools/*.py` | price / quote / hk / fundamentals / news / plot / pdf 工具 |
 | `src/utils/checkpointer.py` | PostgreSQL 检查点（无库时回退内存） |
-| `src/api.py` | FastAPI 后端（`/analyze`、`/analyze/approve`） |
-| `src/ui/streamlit_app.py` | Streamlit Web UI（报告可折叠、审批面板） |
+| `src/api.py` | FastAPI 后端（`/analyze` + 异步 `/api/research`、SSE `/stream`、`/metrics`） |
+| `frontend/` | Vue 3 + TS + Pinia + Router + Element Plus UI（SSE 实时进度） |
+| `src/runtime/` | 异步运行时：runs 注册表（asyncpg）、SSE 事件总线、分层记忆、限流器、runner |
+| `src/observability/` | Prometheus 指标、LLM token/成本埋点 |
+| `src/celery_app.py` | Celery App（Redis broker、优先级/死信队列） |
+| `src/tasks.py` | Celery 任务：run / resume 研究、死信处理 |
 | `src/cli.py` | CLI 入口 |
 | `config/settings.yaml` | LLM 提供方、严格模式、新闻源、编排配置 |
 
 ---
+
+### 异步运行时与基础设施
+
+- `POST /api/research` 立即返回 `run_id`；**Celery worker** 执行 LangGraph 流水线。
+- 图节点事件经共享 `stream_graph` 发布到 **Redis 事件总线**，并通过 **SSE**（`/api/research/{id}/stream`）推送给前端。
+- run 状态与 `result` 持久化到 **Postgres**（`research_runs`，asyncpg）；HITL 审批从 **Postgres checkpoint** 恢复（`/api/research/{id}/decision`）。
+- **Redis** 还用于基本面 / 短期记忆缓存与按源的限流器。
+- **分层记忆**：短期（Redis 滑动窗口）+ 长期（Postgres pgvector，重要性 / 时间衰减 / 检索）+ 压缩（LLM 摘要 / 裁剪）。
+- **可观测**：`/metrics`（Prometheus：LLM token / 成本 / 耗时、节点耗时、数据源错误、run 状态）+ 结构化 JSON 日志 + 自动导入的 Grafana 面板。
+- **可选 API 鉴权**：在 `.env` 设 `API_KEY` 后，写端点（submit / decision / analyze）需 `X-API-Key`，并由 Redis 限流器限流。
+- **报告下载 / 预览**：`/artifacts/{symbol}/{file}`。
+- **部署**：`docker compose up -d --build` → api / worker / db(pgvector) / redis / frontend(nginx) / prometheus / grafana。
+
+---
+
 #### 支持的模式
 
 | 模式 | 行为 |

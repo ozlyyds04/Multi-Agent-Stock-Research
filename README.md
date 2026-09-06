@@ -1,352 +1,3 @@
-# Multi Agent Stock Research (Powered by LangChain + LangGraph)
-
-[![Python Version](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://www.python.org/downloads/)
-[![LangChain](https://img.shields.io/badge/langchain-1.3-purple.svg)](https://github.com/langchain-ai/langchain)
-![LLM](https://img.shields.io/badge/Orchestrator-Langgraph-red)
-[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
-[![FastAPI](https://img.shields.io/badge/FastAPI-ready-brightgreen.svg)](https://fastapi.tiangolo.com)
-[![LLM](https://img.shields.io/badge/LLM-DeepSeek-black.svg)](https://www.deepseek.com)
-![AIEngineering](https://img.shields.io/badge/Discipline-AI_Engineering-purple)
-![LangChain](https://img.shields.io/badge/Framework-LangChain-orange)
-![LLM](https://img.shields.io/badge/Model-LLM-black)
-![LLM](https://img.shields.io/badge/Data-Agent-blue)
-![LLM](https://img.shields.io/badge/Analyst-Agent-lightgreen)
-![LLM](https://img.shields.io/badge/Compliance-Agent-red)
-![LLM](https://img.shields.io/badge/Supervisor-Agent-orange)
----
-
-## Overview
-
-![Architecture Diagram](docs/Multiagent.svg)
-
-![UI Screenshot](docs/Screenshots/UI.png)
-
-> 架构图（SVG，GitHub 原生渲染）· UI 截图（PNG）｜Architecture diagram (SVG, natively rendered by GitHub) & UI screenshot (PNG). 详细说明见 [docs/architecture.md](docs/architecture.md).
-
----
-
-## 项目结构 | Project Structure
-
-```text
-multiagent-stock-research/
-├── src/
-│   ├── agents/                  # 智能体：数据 / 分析 / 合规 / 主管
-│   │                            # Agents: Data / Analyst / Compliance / Supervisor
-│   ├── graph/
-│   │   └── orchestrator.py      # LangGraph 编排：条件路由、修复/校验、审批边（HITL）
-│   │                            # LangGraph: conditional routing, repair/validate, approval edge
-│   ├── tools/                   # 数据工具：行情 / 基本面 / 新闻 / 绘图 / PDF
-│   │                            # Tools: prices / fundamentals / news / plot / PDF
-│   ├── guardrails/              # 输入规范化与输出中立性（中英提示词）
-│   │                            # Input normalization & output neutrality
-│   ├── ui/streamlit_app.py      # Streamlit Web UI：审批面板、可折叠报告
-│   │                            # Web UI: approval panel, collapsible report
-│   ├── api.py                   # FastAPI 后端（/analyze、/analyze/approve）
-│   ├── cli.py                   # 命令行入口 | CLI entrypoint
-│   └── config/settings.yaml     # 配置：LLM 提供方、严格模式、新闻源
-│                                # Config: LLM provider, strict mode, news sources
-├── tests/                       # 单元 / 集成 / e2e 测试（覆盖率 ≥ 70%）
-│                                # Unit / integration / e2e tests (coverage >= 70%)
-├── docs/
-│   ├── Multiagent.svg           # 架构图（SVG，GitHub 原生渲染）| Architecture diagram
-│   ├── architecture.md          # 架构说明（中英）| Architecture docs (bilingual)
-│   └── Screenshots/UI.png       # UI 截图 | UI screenshot
-├── pyproject.toml               # 依赖与项目元数据（uv）| Project metadata & deps
-├── uv.lock                      # 锁定依赖版本 | Locked dependency versions
-├── .env.example                 # 环境变量模板（.env 不入库）| Env template (.env ignored)
-└── README.md
-```
-
----
-
-## Why This Project Exists
-
-The world of financial research has evolved — analysts now rely on automation, AI, and real-time data instead of Excel sheets and manual fundamentals.  
-This project demonstrates a **Minimal-production-ready multi-agent research system** built using **LangChain + LangGraph**, designed to automate:
-
--  Historical stock price analysis  
--  Fundamental data fetching
--  News tracking
--  Analyst-style report generation
--  Compliance filtering
--  PDF + Markdown Research Reports with charts
-
-Whether you're a developer, quant researcher, analyst, or AI enthusiast — this repo shows how to build **real-world LLM-enabled workflows** that generate institutional-quality research without requiring paid API data feeds.
-
----
-
-##  Key Features
-
-| Feature                        | Description |
-|--------------------------------|------------|
-| **4-Agent Architecture**       | DataAgent, AnalystAgent, ComplianceAgent, SupervisorAgent |
-| **Agent Tool Calling**         | AnalystAgent 在数据缺口下自主调用行情/基本面工具补充数据 |
-| **Conditional Routing + Repair** | 数据缺失自动进入修复节点补充，失败时按 strict_mode 中止或降级 |
-| **Charts + Stats**             | Auto-generates return stats + matplotlib price chart |
-| **Live News Feed Integration** | RSS + Google News fallback（美股/A 股/港股） |
-| **PDF Report Generation**      | Produces clean markdown AND PDF research output |
-| ️**Free Data Sources**        |Alpha Vantage + AKShare + Google News RSS/东方财富公告 |
-| **FastAPI Endpoint**           | `/analyze` route returns report paths + JSON response |
-| **Error Handling**             | Skips unknown symbols, logs edge cases, continues pipeline |
-| **Human-In-Loop (Postgres)** | 审批边 interrupt：批准/驳回/修改，状态经 PostgreSQL 持久化可跨进程恢复 |
-
----
-
-## Tech Stack
-
-| Layer | Tech |
-|-------|------|
-| Orchestration | LangGraph, LangChain |
-| Backend APIs | FastAPI |
-| LLM Model | DeepSeek（deepseek-v4-flash）· 可切换 OpenAI |
-| Data Tools | Alpha Vantage, AKShare, Google News RSS, 东方财富公告 |
-| File Formats | Markdown, JSON, PDF |
-| Logging | Rotating log file via `logging` + `TimedRotatingFileHandler` |
-| Code Quality | Black, Ruff, Pytest |
-| PDF Rendering | fpdf2 (pure Python, no external binaries) |
-| Python | 3.10+ |
-
----
-# Agent Responsibilities Matrix
-| Agent                        | Primary Function                                                      | Input Dependencies           | Output Artifacts                                  | Tools Used                                        |
-| ---------------------------- | --------------------------------------------------------------------- | ---------------------------- | ------------------------------------------------- | ------------------------------------------------- |
-| **DataAgent**                | Fetches historical price data, key financial metrics, and recent news | Stock symbol, days           | `raw_data.json`, `prices`, `fundamentals`, `news` | Alpha Vantage, AKShare, Google News RSS/东方财富公告                 |
-| **AnalystAgent**             | Interprets data and writes narrative summary                          | DataAgent output             | Analyst Note (text)                               | LLM (DeepSeek/OpenAI), tool calling, LangChain PromptTemplate |
-| **ComplianceAgent**          | Validates phrasing and enforces neutral tone                          | Analyst Note                 | Compliant Final Note                              | LLM Compliance Filter, Rule-based Keyword Scanner |
-| **SupervisorAgent**          | Merges all content, generates formatted Markdown & PDF report         | Compliant Note, Data Summary | `.md`, `.pdf`, `.png` artifacts                   | fpdf2, matplotlib                                 |
-| **Orchestrator (LangGraph)** | Directs data flow and ensures orderly execution                       | All agents                   | End-to-end automated workflow                     | LangGraph + FastAPI integration                   |
-
----
-## Agent Responsibility Model
-
-Each agent in this system has a clearly defined, non-overlapping role:
-
-- **DataAgent**
-  - Collects raw market data, fundamentals, and news
-  - Produces structured JSON only (no interpretation)
-
-- **AnalystAgent**
-  - Interprets price action, fundamentals, and news
-  - Produces narrative investment analysis
-
-- **ComplianceAgent**
-  - Enforces neutral tone and regulatory-safe phrasing
-  - Removes prohibited language and injects disclosures
-  - Does not generate new analysis
-
-- **SupervisorAgent**
-  - Acts as Editor-in-Chief
-  - Decides final report structure
-  - Removes incomplete or low-quality sections
-  - Produces the final institutional-grade research note
----
-
-## Installation
-
-```bash
-git clone https://github.com/ozlyyds04/Multi-Agent-Stock-Research.git
-cd Multi-Agent-Stock-Research
-uv sync
-cp .env.example .env
-```
-Edit `.env` and add your ALPHA_VANTAGE_API_KEY from [https://www.alphavantage.co/support/#api-key](Alpha Vantage).  
-Optionally tune `config/settings.yaml` to select your preferred LLM provider, max_news, strict_mode.
-
-### Run
-```bash
-# 1) Backend API
-uv run uv run uvicorn src.api:app --reload --port 8000
-
-# 2) Web UI
-uv run uv run streamlit run src/ui/streamlit_app.py
-```
-
-    PDF export uses the built-in fpdf2 renderer (pure Python) — no need to install pandoc / wkhtmltopdf.
----
-## ⚠️ API Quota & Strict Mode Behavior
-
-Alpha Vantage free tier allows 25 requests per day (each quote / daily-price call costs 1).
-When the limit is exceeded, requests return a rate-limit note; the pre-check skips validation
-gracefully and the price cache (6h TTL) helps avoid repeated requests.
-In strict mode (default), the pipeline will abort gracefully and log a message such as:
-
-```bash
-严格模式中止：缺少关键数据：prices（股票代码：AAPL）。可能原因：数据源接口暂不可用、请求受限，或该股票代码对应的数据缺失。
-```
-To continue testing even when quotas are reached:
-```yaml
-StrictMode:
-  strict_mode: false
-```
-Fundamentals and A-share data come from AKShare (free, no key required).
-
----
-## How It Works
-
-Every time you run a stock analysis, four distinct agents collaborate:
-
-1. Data Agent → Fetches prices, fundamentals, and news
-
-2. Analyst Agent → Writes the narrative & market interpretation
-
-3. Compliance Agent → Screens content for restricted words
-
-4. Supervisor Agent → Merges, formats, and publishes outputs
-
-They communicate via a LangGraph state machine and are orchestrated end-to-end through CLI or API.
-
----
-## Architecture Overview
-
-![Architecture Example](docs/Multiagent.svg)
-
-This architecture diagram shows how a stock symbol request flows through a LangGraph-powered multi-agent pipeline — from data collection, AI analysis, and compliance filtering to final report generation and artifact export.
-For a deeper explanation, see [`docs/architecture.md`](docs/architecture.md)
-
----
-# PDF Rendering (fpdf2)
-
-The report generator uses a built-in fpdf2 renderer (pure Python): headings, lists,
-bold text, links, the embedded price chart and page numbers are laid out programmatically
-with a CJK font (e.g. Microsoft YaHei). No pandoc or wkhtmltopdf installation is required.
-
-The exporter is pure Python (fpdf2), so PDFs work on any machine without extra binaries.
-
----
-### Usage (CLI)
-```bash
-python -m src.cli --symbol AAPL --days 10 --outdir artifacts
-```
-### Sample CLI Output:
-CLI prints the generated report / plot / pdf paths to stdout.
----
-## REST API (FastAPI)
-### Start the server:
-```bash
-uv run uvicorn src.api:app --reload --port 8000
-```
-### Example call:
-```
-curl -X POST http://127.0.0.1:8000/analyze \
--H "Content-Type: application/json" \
--d '{"symbol":"META","days":10}'
-```
-### Sample API Output:
-The API returns report paths + JSON (see the curl example above).
----
-### Sample Chart Output:
-Price charts are generated per run under `artifacts/<SYMBOL>/<SYMBOL>_chart.png` (see the UI Report tab).
----
-## Results
-
-The system has been tested on multiple tickers (AAPL, MSFT, META) across 7–10 day ranges, consistently generating complete reports that include:
-
-1. Snapshots.
-2. Fundamental Highlights
-3. Recent News Headlines
-4. Analyst Commentary
-5. Methodology
-6. Execution Metadata
-7. Price chart and statistics.
-8. Exported .pdf and .json artifacts
-
-Each run executes with a live LLM API key, making it practical for near-real-time research report automation and  produces a complete report folder under artifacts / SYMBOL, containing:
-
-```bash
-AAPL_<date>_report.md
-AAPL_<date>_report.pdf
-AAPL_chart.png
-AAPL_raw.json
-```
----
-
-## User Interface 
-### Interactive web application using Streamlit
- - Streamlit frontend abstracts away backend complexity and calls FastAPI /analyze.
-### Clear user guidance
-- UI includes usage tips (example tickers, quota guidance, PDF export prerequisites).
-### Error messaging
-- Backend returns structured JSON errors (status=error, reason, optional suggested_action) surfaced to users.
-### Run UI
-```bash
-uv run streamlit run src/ui/streamlit_app.py
-
-```
-### Sample UI Output:
-![UI Example](docs/Screenshots/UI.png)
----
-## Resilience & Monitoring 
-
-### Retry logic with exponential backoff
-
-- Implemented via src/utils/resilience.py and used in:
-   - src/tools/fundamentals_tool.py (transient HTTP status retries)
-   - src/tools/price_tool.py (transient Alpha Vantage failures)
-### Timeout handling
-
- - Per-attempt timeouts enforced in retry wrapper.
- - Global workflow timeout enforced in orchestrator (ThreadPoolExecutor + fut.result(timeout=...)).
-### Loop limits / iteration caps
-- Orchestration graph is a finite DAG with fixed nodes (no unbounded loops by design).
-### Graceful handling of agent failures
-- AnalystAgent/ComplianceAgent failures fall back to safe defaults while preserving report generation.
-- SupervisorAgent failures fall back to compliant text.
-### Traceability
-- Run-level context (run_id/symbol) is logged for correlating failures, retries, and fallback events.
----
-## Logging, Maintenance, and Operations
-
-- Logs are written to:
-  - Console output (developer visibility)
-  - Rotating file: logs/app.log (rotation enabled; UTF-8 encoding)
-
-- Each pipeline run logs a unique run_id to support debugging across retries/failures.
-
-- Recommended maintenance:
-  - Keep RSS sources current (some feeds may return 404/429; retries are applied, but replace dead feeds).
-  - If strict-mode is enabled, ensure your RSS sources and fundamentals provider are stable to avoid aborts.
-  -  PDF export is built-in (fpdf2), so no external PDF tools are required.
----
-## Tests & Quality Assurance
-### Comprehensive Testing Suite
-- Unit tests cover core tools and agent behavior (data fetchers, agent output handling, strict-mode failure paths).
-- Integration tests validate the orchestrator flow (agent-to-agent state passing, strict-mode abort, graceful degradation).
-- End-to-end smoke tests exercise complete workflows via CLI/API entrypoints using mocks (to avoid external API dependency).
-- Coverage reporting is enabled via pytest-cov for core modules.
-### Run tests + coverage
-```bash
-# 运行全部离线测试 + 覆盖率（阈值 70%，pytest.ini 已配置）
-uv run pytest tests --ignore=tests/e2e
-```
-### Run a Single Test File
-```bash
-uv run pytest tests/unit/agents/test_analyst_agent.py -v
-```
-> `tests/e2e` 依赖真实外部 API（行情/新闻），默认不纳入离线套件。
----
-## Safety & Security Guardrails 
-
-#### Input validation / sanitization
- - Central request validation via validate_request() (symbol, days, outdir).
- - Ticker validity pre-check via Alpha Vantage before pipeline execution (rejects invalid/delisted symbols).
-#### Output filtering / content safety
- - Neutrality enforcement via enforce_neutrality() and forbidden phrase filtering in the ComplianceAgent.
- - ComplianceAgent explicitly rewrites to remove prohibited claims and ensure regulatory-safe language.
-#### Graceful error handling
- - Strict-mode abort produces structured, user-facing errors with suggested actions.
- - Non-strict mode proceeds with warnings and “N/A placeholders” where needed.
-#### Logging for compliance/debug
- - Consistent structured logging across tools, agents, and orchestrator (including warnings/fallbacks).
----
-## Contributing
-PRs are welcome! Whether you're fixing a bug, improving PDF formatting, or adding a new tool — open a PR and let's build better agent workflows together.
-
-
-
----
-
-# 中文版（全文翻译）| Chinese Version
-
 # 多智能体股票研究（基于 LangChain + LangGraph）
 
 [![Python Version](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://www.python.org/downloads/)
@@ -362,6 +13,91 @@ PRs are welcome! Whether you're fixing a bug, improving PDF formatting, or addin
 ![LLM](https://img.shields.io/badge/Analyst-Agent-lightgreen)
 ![LLM](https://img.shields.io/badge/Compliance-Agent-red)
 ![LLM](https://img.shields.io/badge/Supervisor-Agent-orange)
+---
+
+## 项目结构
+
+```text
+multiagent-stock-research/
+├── src/
+│   ├── agents/                  # 数据 / 分析 / 合规 / 主管 智能体
+│   ├── graph/
+│   │   ├── orchestrator.py      # LangGraph 编排：条件路由、修复/校验、审批边（HITL）
+│   │   └── precheck.py          # 股票预检共享函数
+│   ├── runtime/
+│   │   ├── run_manager.py       # 异步运行时代理（进程内执行）
+│   │   ├── runner.py            # Worker 侧执行器（Celery 调用）
+│   │   ├── graph_stream.py      # 共享流式执行器
+│   │   ├── backends.py          # Redis/内存事件总线、缓存、短期记忆
+│   │   ├── memory.py            # 长期记忆（pgvector / 内存）+ 压缩
+│   │   ├── ratelimit.py         # 主动限流（内存/Redis）
+│   │   ├── db.py                # asyncpg runs 注册表
+│   │   └── embedder.py          # 文本嵌入（OpenAI/哈希）
+│   ├── observability/           # Prometheus 指标、LLM token/成本埋点、pricing
+│   ├── celery_app.py            # Celery App（Redis broker、优先级/死信）
+│   ├── tasks.py                 # Celery 任务：run/resume 研究、死信
+│   ├── tools/                   # 行情 / 基本面 / 新闻 / 绘图 / PDF
+│   ├── guardrails/              # 输入规范化与输出中立性
+│   └── config/settings.yaml     # LLM provider、严格模式、新闻源
+├── frontend/                    # Vue 3 + TS + Pinia + Router + Element Plus（SSE 实时）
+├── docs/
+│   ├── Multiagent.svg           # 架构图（SVG，GitHub 原生渲染）
+│   ├── architecture.md          # 架构说明（中文）
+│   ├── grafana_dashboard.json   # Grafana 面板（自动导入）
+│   └── Screenshots/UI.png       # UI 截图
+├── Dockerfile.backend           # 后端镜像（依赖层缓存 + pip 缓存）
+├── frontend/Dockerfile          # Vue 构建（node）→ nginx
+├── frontend/nginx.conf          # /api 反代 + SSE（关缓冲）
+├── docker-compose.yml           # api / worker / db(pgvector) / redis / frontend / prometheus / grafana
+├── prometheus.yml               # 抓取 api:8000/metrics
+├── grafana/                     # 预配置数据源 + 面板
+├── requirements.txt             # 运行时依赖（Docker 缓存层）
+├── pyproject.toml               # 依赖与元数据（uv）
+├── uv.lock
+├── .github/workflows/           # CI（ruff/black/pytest）+ CD（镜像推送）
+├── .env.example                 # 环境变量模板（.env 不入库）
+└── README.md
+```
+
+---
+
+## 快速启动：Docker（推荐）| 一键启动
+
+容器化整套（后端 API + Celery worker + PostgreSQL/pgvector + Redis + Vue 前端 + Prometheus + Grafana）一条命令：
+
+```bash
+cp .env.example .env          # 填入你的 ALPHA_VANTAGE_API_KEY / DEEPSEEK_API_KEY
+docker compose up -d --build
+```
+
+- Vue 前端（nginx）：http://localhost:8080 — SPA，实时 SSE 进度
+- FastAPI：http://localhost:8000 — `/health`、`/metrics`、`/api/research*`
+- Prometheus：http://localhost:9090（抓取 `api:8000/metrics`）
+- Grafana：http://localhost:3000 — `admin/admin`，面板自动导入
+
+`POST /api/research` 立即返回 `run_id`；Celery worker 执行 LangGraph 流水线，把节点事件发到 Redis 事件总线（经 SSE 暴露），并把状态/结果持久化到 Postgres。HITL 审批通过 `/decision` 恢复。
+
+本地运行（不用 Docker）：
+```bash
+uv sync --extra dev
+uv run uvicorn src.api:app --reload --port 8000        # 后端
+cd frontend && npm ci && npm run dev                   # Vue UI（vite，代理 /api）
+```
+
+> 美股需要可用的 Alpha Vantage key（免费版 25 次/天）；港股（如 `00700`）走 AKShare，无需该配额。
+
+## 端到端验证与关键修复
+
+一次完整的 `docker compose up` 跑通后发现并**修复**了三个真实问题：
+
+- asyncpg 无法把 run 的 `result`（dict）写入 `jsonb` 列（`expected str, got dict`），导致状态永远到不了 `success`。已在 `src/runtime/db.py` 给连接池注册 `jsonb` 编解码器（`encoder=json.dumps, decoder=json.loads`）。
+- 容器内 PDF 导出缺中文字体（`未找到可用的中文字体`）。已在 `Dockerfile.backend` 安装 `fonts-noto-cjk`。
+- PDF 报 `Undefined font: cjkB`（没找到粗体字体）。已在 `src/tools/pdf_tool.py` 里，当无独立粗体时用常规字体注册成 `B`。
+
+同时优化了镜像构建：依赖从 `requirements.txt` 装在独立缓存层 + BuildKit pip 缓存挂载，本地包用 `--no-deps` 安装——纯改代码的构建从约 20 分钟降到约 20 秒。
+
+以港股 `00700` 端到端验证：提交 → Celery worker → 收集（AKShare）→ 分析 → 合规 → 主管 → 生成 `report.md` + `.pdf` + `.png` + `.json`，状态 `success`。
+
 ---
 
 ## 这个项目为什么存在
@@ -391,9 +127,14 @@ PRs are welcome! Whether you're fixing a bug, improving PDF formatting, or addin
 | **实时新闻源集成** | RSS + Google News 兜底（美股/A 股/港股） |
 | **PDF 报告生成** | 输出整洁的 Markdown 和 PDF 研究报告 |
 | **免费数据源** | Alpha Vantage + AKShare + Google News RSS/东方财富公告 |
-| **FastAPI 接口** | `/analyze` 路由返回报告路径 + JSON 响应 |
+| **FastAPI 接口** | `/api/research`（异步，返回 run_id）+ `/analyze`（同步，兼容旧 CLI） |
 | **错误处理** | 跳过未知股票代码、记录边界情况、继续执行流水线 |
 | **人在回路（Postgres）** | 审批边 interrupt：批准/驳回/修改，状态经 PostgreSQL 持久化可跨进程恢复 |
+| **异步任务 + SSE** | `POST /api/research` 立即返回 run_id；节点事件经 Redis 事件总线 → SSE `/stream` 实时推送 |
+| **Celery / Redis 队列** | 独立 worker 执行；`research` / `research_high`（审批）优先级队列 + 失败重试与死信 |
+| **分层记忆** | 短期（Redis 滑动窗口）+ 长期（pgvector 嵌入/重要性/衰减/检索）+ 压缩（LLM 摘要/裁剪） |
+| **可观测性** | 结构化 JSON 日志 + `/metrics`（Prometheus）+ 节点级 token/耗时/成本 + Grafana 面板 |
+| **一键部署** | `docker compose up -d --build`：api/worker/db/redis/frontend/prometheus/grafana |
 
 ---
 
@@ -403,13 +144,18 @@ PRs are welcome! Whether you're fixing a bug, improving PDF formatting, or addin
 |------|------|
 | 编排 | LangGraph、LangChain |
 | 后端 API | FastAPI |
-| LLM 模型 | DeepSeek（deepseek-v4-flash）· 可切换 OpenAI |
+| LLM 模型 | DeepSeek（deepseek-v4-flash-vision-exp）· 可切换 OpenAI（用 `LLM_MODEL` / `settings.yaml` 配置） |
 | 数据工具 | Alpha Vantage、AKShare、Google News RSS、东方财富公告 |
 | 文件格式 | Markdown、JSON、PDF |
-| 日志 | 通过 `logging` + `TimedRotatingFileHandler` 轮转日志文件 |
+| 异步运行时 | FastAPI async + `astream` 节点事件、SSE（`/stream`）、asyncpg runs 注册表 |
+| 任务队列 | Celery worker + Redis broker（优先级 / 重试 / 死信队列） |
+| 记忆/缓存 | Redis（事件总线 / 缓存 / 短期记忆）+ Postgres pgvector（长期记忆）+ 限流器 |
+| 可观测 | Prometheus `/metrics` + 结构化 JSON 日志（`LOG_FORMAT=json`）+ Grafana 面板 |
+| 前端 | Vue 3 + TS + Pinia + Vue Router + Element Plus（nginx 托管） |
+| 日志 | 结构化 JSON（文件）via `logging` + 轮转 |
 | 代码质量 | Black、Ruff、Pytest |
 | PDF 渲染 | fpdf2（纯 Python，无外部依赖） |
-| Python | 3.10+ |
+| Python | 3.10+（Docker 镜像 3.11-slim） |
 
 ---
 # 智能体职责矩阵
@@ -459,11 +205,14 @@ cp .env.example .env
 
 ### 启动
 ```bash
-# 1) 后端 API
-uv run uv run uvicorn src.api:app --reload --port 8000
+# 0) 一键容器化整套（推荐）
+docker compose up -d --build
 
-# 2) Web UI
-uv run uv run streamlit run src/ui/streamlit_app.py
+# 1) 后端 API（本地，无 Docker）
+uv run uvicorn src.api:app --reload --port 8000
+
+# 2) Web UI（Vue 3，本地）
+cd frontend && npm ci && npm run dev
 ```
 
     PDF 导出使用内置的 fpdf2 渲染引擎（纯 Python），无需安装 pandoc / wkhtmltopdf。
@@ -527,9 +276,9 @@ uv run uvicorn src.api:app --reload --port 8000
 ```
 ### 调用示例：
 ```
-curl -X POST http://127.0.0.1:8000/analyze \
+curl -X POST http://127.0.0.1:8000/api/research \
 -H "Content-Type: application/json" \
--d '{"symbol":"META","days":10}'
+-d '{"symbol":"00700","days":10}'
 ```
 ### API 输出示例：
 API 返回报告路径 + JSON（见上方 curl 示例）。
@@ -561,18 +310,16 @@ AAPL_raw.json
 ---
 
 ## 用户界面
-### 使用 Streamlit 的交互式 Web 应用
- - Streamlit 前端屏蔽了后端复杂性，并调用 FastAPI /analyze。
-### 清晰的用户引导
-- UI 包含使用提示（示例股票代码、配额指引、PDF 导出前置条件）。
-### 错误消息
-- 后端返回结构化 JSON 错误（status=error、reason、可选的 suggested_action），并呈现给用户。
-### 运行 UI
-```bash
-uv run streamlit run src/ui/streamlit_app.py
+项目搭载一个 **Vue 3** SPA（`frontend/`），基于 TypeScript、Pinia、Vue Router 和 Element Plus，
+消费异步 API 并通过 SSE 实时展示进度：
 
-```
-### UI 输出示例：
+- 研报生成页：股票代码/天数/人工审批输入、SSE 实时进度条、结果概览
+- 审批中心页：待审批列表、批准/驳回/修改
+- 历史记录页：分页任务列表 + 状态筛选
+- 监控面板页：运行统计 + `/metrics` / Grafana 入口
+
+容器栈里由 nginx 在 `http://localhost:8080` 托管（反向代理 `/api` 到后端）。本地开发：`cd frontend && npm ci && npm run dev`。
+
 ![UI 示例](docs/Screenshots/UI.png)
 ---
 ## 韧性与监控
@@ -640,5 +387,3 @@ uv run pytest tests/unit/agents/test_analyst_agent.py -v
 ---
 ## 参与贡献
 欢迎提交 PR！无论你是在修复 bug、改进 PDF 格式，还是添加新工具——提交 PR，一起构建更好的智能体工作流。
-
-

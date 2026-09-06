@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import re
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 from src.utils.logger import get_logger
 
@@ -25,11 +25,26 @@ def to_hk_bare(symbol: str) -> str:
     return f"{int(s):05d}"
 
 
-def _num(v: Any) -> float:
+def _num(v: Any) -> Optional[float]:
+    """解析数值；缺失/非法返回 None（绝不能返回 0.0——价格 0 会被当作真实行情污染统计）。"""
     try:
-        return float(v)
+        f = float(v)
     except (TypeError, ValueError):
-        return 0.0
+        return None
+    if f != f:  # NaN
+        return None
+    if f in (float("inf"), float("-inf")):
+        return None
+    return f
+
+
+def _is_transient_error(msg: str) -> bool:
+    """按错误消息粗分：网络/超时类瞬时错误可重试，其余视为确定性失败。"""
+    low = msg.lower()
+    return any(
+        k in low
+        for k in ("timeout", "timed out", "connection", "temporarily", "reset by peer", "502", "503", "504")
+    )
 
 
 def fetch_hk_daily(symbol: str, days: int = 30) -> Dict[str, Any]:
@@ -38,7 +53,7 @@ def fetch_hk_daily(symbol: str, days: int = 30) -> Dict[str, Any]:
 
     返回：
       {"ok": True, "data": [{"Date", "Open", "High", "Low", "Close", "Volume"}, ...]}
-      {"ok": False, "retryable": False, "message": ...}
+      {"ok": False, "retryable": bool, "message": ...}
     """
     bare = to_hk_bare(symbol)
     try:
@@ -46,11 +61,12 @@ def fetch_hk_daily(symbol: str, days: int = 30) -> Dict[str, Any]:
 
         df = ak.stock_hk_daily(symbol=bare)
     except Exception as e:
-        logger.warning("获取 %s 的港股日线失败：%s", bare, e)
+        retryable = _is_transient_error(str(e))
+        logger.warning("获取 %s 的港股日线失败（retryable=%s）：%s", bare, retryable, e)
         return {
             "ok": False,
             "rate_limited": False,
-            "retryable": False,
+            "retryable": retryable,
             "message": str(e),
         }
 
@@ -69,14 +85,19 @@ def fetch_hk_daily(symbol: str, days: int = 30) -> Dict[str, Any]:
 
     records = []
     for _, row in df.tail(days).iterrows():
-        records.append({
-            "Date": str(row.get("date", "")),
-            "Open": _num(row.get("open")),
-            "High": _num(row.get("high")),
-            "Low": _num(row.get("low")),
-            "Close": _num(row.get("close")),
-            "Volume": _num(row.get("volume")),
-        })
+        close = _num(row.get("close"))
+        if close is None:
+            continue  # 缺收盘价的行没有分析价值，跳过而不是伪装成 0
+        records.append(
+            {
+                "Date": str(row.get("date", "")),
+                "Open": _num(row.get("open")),
+                "High": _num(row.get("high")),
+                "Low": _num(row.get("low")),
+                "Close": close,
+                "Volume": _num(row.get("volume")),
+            }
+        )
 
     logger.info("已从 AKShare 获取 %s 的港股日线：%d 条记录", bare, len(records))
     return {"ok": True, "data": records}

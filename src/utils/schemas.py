@@ -1,6 +1,7 @@
 from pydantic import BaseModel
 from typing import List, Dict, Any, Optional
 
+
 class PriceRecord(BaseModel):
     Date: str
     Open: float
@@ -9,10 +10,12 @@ class PriceRecord(BaseModel):
     Close: float
     Volume: float
 
+
 class PriceBundle(BaseModel):
     symbol: str
     data: List[PriceRecord]
     meta: Dict[str, Any] = {}
+
 
 class NewsItem(BaseModel):
     title: str

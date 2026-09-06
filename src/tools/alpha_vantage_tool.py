@@ -5,8 +5,8 @@ from typing import Any, Dict, Optional
 
 import requests
 
-from src.utils.helper import is_rate_limit_error
 from src.utils.logger import get_logger
+from src.runtime.ratelimit import check_rate_limit, RateLimitExceeded
 
 logger = get_logger(__name__)
 
@@ -24,6 +24,12 @@ def get_api_key(api_key: Optional[str] = None) -> str:
 
 def _request(params: Dict[str, Any], api_key: Optional[str] = None) -> Dict[str, Any]:
     key = get_api_key(api_key)
+    # 主动限流：未超过配额才真正发出请求，避免把免费额度打穿
+    try:
+        check_rate_limit("alpha_vantage")
+    except RateLimitExceeded as e:
+        logger.warning("Alpha Vantage 请求被本地限流：%s", e)
+        return {"Note": "local rate limit reached"}
     try:
         r = requests.get(BASE_URL, params={**params, "apikey": key}, timeout=20)
         r.raise_for_status()
@@ -36,10 +42,11 @@ def _request(params: Dict[str, Any], api_key: Optional[str] = None) -> Dict[str,
 def is_rate_limited_response(data: Dict[str, Any]) -> bool:
     """
     Alpha Vantage 限流/Key 异常时返回 Note 或 Information 字段，而不是数据。
+    只检查顶层字段：绝不能对响应体整体做 "429" 等子串匹配，
+    正常行情里的价格/成交量数字（如 1429.43、10429300）很容易
+    包含这些子串，会造成大面积误判。
     """
-    if "Note" in data or "Information" in data:
-        return True
-    return is_rate_limit_error(ValueError(str(data)))
+    return "Note" in data or "Information" in data
 
 
 def fetch_quote(symbol: str, api_key: Optional[str] = None) -> Dict[str, Any]:
@@ -103,14 +110,16 @@ def fetch_daily_series(symbol: str, days: int = 30, api_key: Optional[str] = Non
     records = []
     # 统一为时间升序（最旧在前、最新在后），与 AKShare 港股日线保持一致
     for date, bar in reversed(sorted(series.items(), reverse=True)[:days]):
-        records.append({
-            "Date": date,
-            "Open": _num(bar.get("1. open")),
-            "High": _num(bar.get("2. high")),
-            "Low": _num(bar.get("3. low")),
-            "Close": _num(bar.get("4. close")),
-            "Volume": _num(bar.get("5. volume")),
-        })
+        records.append(
+            {
+                "Date": date,
+                "Open": _num(bar.get("1. open")),
+                "High": _num(bar.get("2. high")),
+                "Low": _num(bar.get("3. low")),
+                "Close": _num(bar.get("4. close")),
+                "Volume": _num(bar.get("5. volume")),
+            }
+        )
 
     logger.info("已从 Alpha Vantage 获取 %s 的 %d 条日线记录", symbol, len(records))
     return {"ok": True, "data": records}

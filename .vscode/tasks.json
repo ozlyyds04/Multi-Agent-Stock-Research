@@ -1,0 +1,39 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Docker: up (full stack)",
+      "type": "shell",
+      "command": "docker compose up -d --build",
+      "group": "build",
+      "problemMatcher": []
+    },
+    {
+      "label": "Docker: logs (api+worker)",
+      "type": "shell",
+      "command": "docker compose logs -f api worker",
+      "group": "build",
+      "problemMatcher": []
+    },
+    {
+      "label": "Backend: uvicorn (local dev, reload)",
+      "type": "shell",
+      "command": "uv run uvicorn src.api:app --reload --port 8000",
+      "group": "build",
+      "problemMatcher": []
+    },
+    {
+      "label": "Frontend: Vue dev server",
+      "type": "shell",
+      "command": "cd frontend && npm ci && npm run dev",
+      "problemMatcher": []
+    },
+    {
+      "label": "Tests: offline (coverage)",
+      "type": "shell",
+      "command": "uv run pytest tests --ignore=tests/e2e",
+      "group": "test",
+      "problemMatcher": []
+    }
+  ]
+}

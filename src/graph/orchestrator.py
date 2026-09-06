@@ -6,11 +6,13 @@ import yaml
 import textwrap
 import re
 import os
+import time
 import concurrent.futures as cf
 from datetime import datetime
-from typing import Dict, Any
+from typing import Any, Dict, List, Optional
 
 from dotenv import load_dotenv
+from langgraph.errors import GraphBubbleUp
 from langgraph.graph import StateGraph, START, END
 from langgraph.types import Command, interrupt
 from langchain_deepseek import ChatDeepSeek
@@ -21,7 +23,13 @@ from src.guardrails.outputs import enforce_neutrality
 from src.utils.checkpointer import get_checkpointer
 from src.utils.helper import safe_num
 from src.utils.log_context import set_log_context
-from src.utils.logger import get_logger
+from src.utils.logger import get_logger, log_structured
+from src.observability import metrics
+from src.observability.llm import InstrumentedLLM
+from src.runtime.backends import get_short_term_memory
+from src.runtime.memory import get_memory_store
+from src.runtime.embedder import get_embedder
+from src.runtime.summarizer import get_summarizer
 from src.tools.math_tool import basic_return_stats
 from src.tools.plot_tool import save_price_plot
 from src.tools.storage_tool import save_json, save_markdown, render_filename
@@ -115,9 +123,32 @@ def _critical_missing(bundle: Dict[str, Any]) -> list:
     return missing
 
 
+def _clear_fund_error(bundle: Dict[str, Any], where: str) -> None:
+    """修复成功后移除对应的错误标记，避免报告的"数据质量说明"误报已修复的问题。"""
+    fundamentals = bundle.get("fundamentals") or {}
+    fundamentals["__errors__"] = [
+        e for e in (fundamentals.get("__errors__") or []) if not (isinstance(e, dict) and e.get("where") == where)
+    ]
+    # 兼容旧结构：单条 __error__ dict
+    for key in ("__error__",):
+        err = fundamentals.get(key)
+        if isinstance(err, dict) and err.get("where") == where:
+            fundamentals.pop(key, None)
+
+
 _TOP_SECTION_NAMES = {
-    "概览", "价格走势", "基本面", "估值与技术面", "估值和技术面", "估值/技术面",
-    "新闻头条及解读", "新闻头条", "关键关注事项", "风险", "短期展望", "数据来源",
+    "概览",
+    "价格走势",
+    "基本面",
+    "估值与技术面",
+    "估值和技术面",
+    "估值/技术面",
+    "新闻头条及解读",
+    "新闻头条",
+    "关键关注事项",
+    "风险",
+    "短期展望",
+    "数据来源",
 }
 
 
@@ -207,6 +238,46 @@ def _daily_market_metrics(price_rows: List[Dict[str, Any]], inc: Dict[str, Any])
     return out
 
 
+def _retrieve_memory(symbol: str, query: str) -> list:
+    """按符号/查询检索长期记忆（相似度 + 时间衰减），失败时安全返回空。"""
+    try:
+        store = get_memory_store()
+        rows = store.search(get_embedder().embed_one(query), k=5, session_key=symbol)
+        if not rows:
+            rows = store.recent(symbol, k=3)
+        return rows
+    except Exception as e:
+        logger.warning("记忆检索失败：%s", e)
+        return []
+
+
+def _memory_reference_block(rows: list) -> str:
+    if not rows:
+        return ""
+    lines = []
+    for r in rows[:5]:
+        content = r.get("content")
+        if not content:
+            continue
+        score = r.get("score")
+        score_txt = f"（相关度 {score:.2f}）" if isinstance(score, (int, float)) else ""
+        lines.append(f"- {content}{score_txt}")
+    return "\n## 历史记忆参考\n" + ("\n".join(lines)) + "\n" if lines else ""
+
+
+def _build_memory_text(symbol: str, daily: Dict[str, Any], inc: Dict[str, Any]) -> str:
+    parts = [f"{symbol} 股价研究要点"]
+    if daily.get("latest_close") is not None:
+        parts.append(f"- 最新收盘价：{daily['latest_close']:.2f}")
+    if daily.get("pe") is not None:
+        parts.append(f"- 市盈率：{daily['pe']:.2f}")
+    if inc.get("revenue"):
+        parts.append(f"- 营收：{inc['revenue']}")
+    if inc.get("netIncome"):
+        parts.append(f"- 净利润：{inc['netIncome']}")
+    return "\n".join(parts)
+
+
 def _llm_from_cfg(cfg: Dict[str, Any]) -> ChatOpenAI | ChatDeepSeek:
     """
     根据 cfg["llm"]["provider"] 初始化聊天模型。
@@ -215,6 +286,7 @@ def _llm_from_cfg(cfg: Dict[str, Any]) -> ChatOpenAI | ChatDeepSeek:
     """
     prov = cfg["llm"]["provider"]
     model = cfg["llm"]["model"]
+    model = os.getenv("LLM_MODEL") or model
     temperature = cfg["llm"].get("temperature", 1.0)
     max_tokens = cfg["llm"].get("max_tokens", 3500)
 
@@ -231,7 +303,7 @@ def _llm_from_cfg(cfg: Dict[str, Any]) -> ChatOpenAI | ChatDeepSeek:
             kwargs["api_key"] = api_key
         if base_url:
             kwargs["base_url"] = base_url
-        return ChatDeepSeek(**kwargs)
+        return InstrumentedLLM(ChatDeepSeek(**kwargs), provider="deepseek", model=model)
 
     # OpenAI 兼容路径（provider=openai 时）
     if any(tag in model for tag in ["gpt-5", "gpt-4o"]) and temperature != 1.0:
@@ -254,7 +326,30 @@ def _llm_from_cfg(cfg: Dict[str, Any]) -> ChatOpenAI | ChatDeepSeek:
         openai_kwargs["api_key"] = openai_key
     if openai_base:
         openai_kwargs["base_url"] = openai_base
-    return ChatOpenAI(**openai_kwargs)
+    return InstrumentedLLM(ChatOpenAI(**openai_kwargs), provider=prov, model=model)
+
+
+def _instrument_node(name: str, fn):
+    """给图节点加计时 + 节点上下文 + 结构化日志（供 /metrics 与 ELK 采集）。"""
+
+    def wrapper(state):
+        metrics.set_node_node(name)
+        start = time.monotonic()
+        try:
+            result = fn(state)
+        except GraphBubbleUp:
+            # interrupt() 暂停是 HITL 的正常流程，不计入 error 指标
+            metrics.observe_node(name, time.monotonic() - start, "interrupted")
+            raise
+        except Exception:
+            metrics.observe_node(name, time.monotonic() - start, "error")
+            raise
+        duration = time.monotonic() - start
+        metrics.observe_node(name, duration, "ok")
+        log_structured(logger, "node_completed", node=name, duration=round(duration, 4))
+        return result
+
+    return wrapper
 
 
 def build_graph(cfg: Dict[str, Any]):
@@ -286,32 +381,20 @@ def build_graph(cfg: Dict[str, Any]):
         logger.info("[运行:%s][节点: 收集数据] 已完成 %s 的数据收集", state.get("run_id"), symbol)
 
         # 检测 fundamentals_tool 暴露的上游 API 错误（402 直接中止）
+        # DataAgent 把错误统一收进 fundamentals["__errors__"]（list），
+        # 每个 error dict 带 where/status/message 字段。
         fundamentals = bundle.get("fundamentals", {}) or {}
-        inc_err = fundamentals.get("__error__") if isinstance(fundamentals,
-                                                              dict) and "__error__" in fundamentals else None
-        inc_list = fundamentals.get("income_statement")
-        met_list = fundamentals.get("key_metrics_ttm")
-        if isinstance(inc_list, dict) and "__error__" in inc_list:
-            inc_err = inc_list["__error__"]
-        if isinstance(met_list, dict) and "__error__" in met_list:
-            met_err = met_list["__error__"]
-        else:
-            met_err = None
-
-        def _mk402_message(where: str, err: dict) -> str:
-            return (
-                f"{symbol} 的上游 API 调用失败（{where}）：状态码={err.get('status')} - {err.get('message')}。"
+        fund_errors = [
+            e
+            for e in (fundamentals.get("__errors__") or [])
+            if isinstance(e, dict) and isinstance(e.get("status"), int) and e["status"] == 402
+        ]
+        if fund_errors:
+            where = fund_errors[0].get("where", "fundamentals")
+            msg = (
+                f"{symbol} 的上游 API 调用失败（{where}）：状态码=402 - {fund_errors[0].get('message')}。"
                 "建议：检查数据源配置，或关闭 strict_mode。"
             )
-
-        if inc_err and isinstance(inc_err, dict) and inc_err.get("status") == 402:
-            msg = _mk402_message("income_statement", inc_err)
-            logger.error(msg)
-            state["__fatal__"] = msg
-            raise ValueError(msg)
-
-        if met_err and isinstance(met_err, dict) and met_err.get("status") == 402:
-            msg = _mk402_message("key_metrics_ttm", met_err)
             logger.error(msg)
             state["__fatal__"] = msg
             raise ValueError(msg)
@@ -322,7 +405,7 @@ def build_graph(cfg: Dict[str, Any]):
         # 新闻为软性数据：缺失仅警告，不阻塞报告生成
         news_items = bundle.get("news", [])
         if isinstance(news_items, list):
-            news_ok = any(isinstance(n, dict) and not n.get("__error__") for n in news_items) or (len(news_items) > 0)
+            news_ok = any(isinstance(n, dict) and not n.get("__error__") for n in news_items)
         else:
             news_ok = False
         if not news_ok:
@@ -331,6 +414,15 @@ def build_graph(cfg: Dict[str, Any]):
         # 非致命的上游工具错误统一记录
         for m in _bundle_error_summary(bundle):
             _state_warn(state, f"{symbol} 的数据警告：{m}")
+
+        # 长期记忆：检索与本次股票相关的历史事实（供报告引用，可观测）
+        try:
+            memory_rows = _retrieve_memory(symbol, f"{symbol} 股票研究报告")
+            state["memory_read"] = memory_rows
+            if memory_rows:
+                logger.info("[运行:%s] 检索到 %d 条长期记忆（%s）", state.get("run_id"), len(memory_rows), symbol)
+        except Exception:
+            state["memory_read"] = []
 
         return state
 
@@ -353,11 +445,13 @@ def build_graph(cfg: Dict[str, Any]):
             res = fetch_income_statement(symbol, limit=2)
             if res.get("income_statement"):
                 bundle.setdefault("fundamentals", {})["income_statement"] = res["income_statement"]
+                _clear_fund_error(bundle, "income_statement")
                 logger.info("[运行:%s][节点: 修复] %s 的利润表摘要已补充", state.get("run_id"), symbol)
         if "key_metrics_ttm" in missing:
             res = fetch_key_metrics(symbol)
             if res.get("key_metrics_ttm"):
                 bundle.setdefault("fundamentals", {})["key_metrics_ttm"] = res["key_metrics_ttm"]
+                _clear_fund_error(bundle, "key_metrics_ttm")
                 logger.info("[运行:%s][节点: 修复] %s 的关键指标已补充", state.get("run_id"), symbol)
 
         state["bundle"] = bundle
@@ -379,6 +473,7 @@ def build_graph(cfg: Dict[str, Any]):
             hint = ""
             if "income_statement" in missing or "key_metrics_ttm" in missing:
                 hint = " 可能原因：数据源接口暂不可用、请求受限，或该股票代码对应的数据缺失。"
+            metrics.inc_strict_abort()
             reason = f"严格模式中止：缺少关键数据：{', '.join(missing)}（股票代码：{symbol}）。{hint}"
             logger.error("%s", reason)
             state["__fatal__"] = reason
@@ -399,16 +494,23 @@ def build_graph(cfg: Dict[str, Any]):
 
         try:
             feedback = state.get("approval_feedback") or ""
+            # 短期记忆：叠加本轮之前的历史反馈（HITL 驳回循环上下文）
+            try:
+                history = get_short_term_memory().recent(str(state.get("run_id", "")), 3)
+                if history:
+                    ctx = "\n".join(
+                        f"- 第{i + 1}轮：{h.get('comment') or h.get('action', '')}" for i, h in enumerate(history)
+                    )
+                    feedback = (feedback + f"\n\n历史反馈上下文：\n{ctx}").strip()
+            except Exception:
+                pass
             note = analyst.run(state["bundle"], state["days"], feedback=feedback)
             if not isinstance(note, str) or not note.strip():
                 raise ValueError("AnalystAgent 返回了空输出。")
             state["analyst_note"] = note
         except Exception as e:
             _state_warn(state, f"{symbol}：AnalystAgent 失败，正在使用回退备注。（{e}）")
-            state["analyst_note"] = (
-                "由于上游生成错误，分析师备注暂不可用。"
-                "报告将继续使用可用的市场数据和披露信息。"
-            )
+            state["analyst_note"] = "由于上游生成错误，分析师备注暂不可用。" "报告将继续使用可用的市场数据和披露信息。"
 
         logger.info("[运行:%s][节点: 分析] %s 已完成", state.get("run_id"), symbol)
         return state
@@ -442,12 +544,14 @@ def build_graph(cfg: Dict[str, Any]):
             return state
 
         symbol = state["symbol"]
-        feedback = interrupt({
-            "symbol": symbol,
-            "draft": state.get("final_note", ""),
-            "analyst_note": state.get("analyst_note", ""),
-            "round": int(state.get("reject_count", 0)) + 1,
-        })
+        feedback = interrupt(
+            {
+                "symbol": symbol,
+                "draft": state.get("final_note", ""),
+                "analyst_note": state.get("analyst_note", ""),
+                "round": int(state.get("reject_count", 0)) + 1,
+            }
+        )
 
         if isinstance(feedback, str):
             action, comment, edited_text = feedback, "", ""
@@ -458,9 +562,19 @@ def build_graph(cfg: Dict[str, Any]):
         else:
             action, comment, edited_text = "approve", "", ""
 
+        # 短期记忆：记录本轮审批反馈（供分析智能体在驳回后参考）
+        try:
+            get_short_term_memory().record(
+                str(state.get("run_id", "")),
+                {"action": action, "comment": comment, "edited_text": edited_text},
+            )
+        except Exception:
+            pass
+
         state["approval_feedback"] = comment or ""
         if action == "edit" and edited_text.strip():
-            state["final_note"] = edited_text.strip()
+            # 人工编辑文本同样要过确定性合规过滤，否则审批 UI 成为违规词注入入口
+            state["final_note"] = enforce_neutrality(edited_text.strip(), cfg["compliance"]["forbidden_phrases"])
         if action == "reject":
             state["reject_count"] = int(state.get("reject_count", 0)) + 1
         state["__approval_action__"] = action
@@ -494,15 +608,11 @@ def build_graph(cfg: Dict[str, Any]):
             dq_lines = "\n".join([f"- {m}" for m in uniq[:8]])
             dq_block = f"\n## 数据质量说明\n{dq_lines}\n"
 
-        logger.info("[运行:%s][节点: 发布] 正在完善并发布 %s 的统一报告", state.get("run_id"),
-                    symbol)
+        logger.info("[运行:%s][节点: 发布] 正在完善并发布 %s 的统一报告", state.get("run_id"), symbol)
 
         price_rows = bundle.get("prices", {}).get("data", [])
         if not price_rows:
-            error_msg = (
-                f"{symbol} 没有可用的价格数据。股票代码可能无效或已退市，"
-                "跳过报告生成。"
-            )
+            error_msg = f"{symbol} 没有可用的价格数据。股票代码可能无效或已退市，" "跳过报告生成。"
             logger.error(error_msg)
             state["error"] = error_msg
             return state
@@ -512,7 +622,7 @@ def build_graph(cfg: Dict[str, Any]):
 
         stats = basic_return_stats(closes)
         mean_ret = float(stats.get("mean") or 0.0)
-        vol_ret = float(stats.get("stdev") or stats.get("volatility") or 0.0)
+        vol_ret = float(stats.get("vol") or 0.0)
         min_ret = float(stats.get("min") or 0.0)
         max_ret = float(stats.get("max") or 0.0)
 
@@ -521,7 +631,6 @@ def build_graph(cfg: Dict[str, Any]):
         met_list = fundamentals.get("key_metrics_ttm", [])
 
         inc = inc_list[0] if isinstance(inc_list, list) and inc_list else {}
-        met = met_list[0] if isinstance(met_list, list) and met_list else {}
         reported_currency = inc.get("reportedCurrency")
 
         daily = _daily_market_metrics(price_rows, inc)
@@ -558,9 +667,10 @@ def build_graph(cfg: Dict[str, Any]):
                 title = (n.get("title", "无标题") if isinstance(n, dict) else "无标题").strip()
                 title = re.sub(r"[\[\]\n\r]+", " ", title)
                 link = (n.get("link", "") if isinstance(n, dict) else "").strip()
-                date_str = ((n.get("published", "") if isinstance(n, dict) else "")[:16] or "N/A")
+                date_str = (n.get("published", "") if isinstance(n, dict) else "")[:16] or "N/A"
 
-                if link:
+                # 只保留 http(s) 链接：javascript:/data: 等伪协议不允许进入报告渲染面
+                if link and re.match(r"^https?://", link, re.IGNORECASE):
                     cleaned_news.append(f"- [{title}]({link}) ({date_str})")
                 else:
                     cleaned_news.append(f"- {title} ({date_str})")
@@ -572,11 +682,26 @@ def build_graph(cfg: Dict[str, Any]):
 
         # SupervisorAgent 综合汇总（安全）
         try:
-            supervisor_input_summary = f"""
-            价格：{len(price_rows)} 行
-            基本面可用：{bool(inc_list and met_list)}
-            新闻条目：{len([n for n in news_items if isinstance(n, dict) and not n.get("__error__")]) if isinstance(news_items, list) else 0}
-            """
+            # 传入真实数据内容而不是只有统计行数：supervisor prompt 要求产出
+            # 走势/基本面/新闻解读等章节，信息不足会导致模型编造细节
+            price_block = "\n".join(
+                f"- {r.get('Date')}: 收盘 {r.get('Close')}"
+                for r in price_rows[-10:]  # 只给最近 10 天，控制上下文长度
+            )
+            fundamentals_summary = ""
+            if isinstance(inc, dict) and inc:
+                fundamentals_summary = (
+                    f"最近财年 {inc.get('fiscalYear', 'N/A')}："
+                    f"营收 {safe_num(inc.get('revenue'), reported_currency)}，"
+                    f"净利润 {safe_num(inc.get('netIncome'), reported_currency)}，"
+                    f"EPS {safe_num(inc.get('epsDiluted'), reported_currency, decimals=2)}"
+                )
+            news_lines = "\n".join(cleaned_news[:5]) or "无"
+            supervisor_input_summary = (
+                f"价格数据（{len(price_rows)} 行，最近 10 个交易日）：\n{price_block}\n\n"
+                f"基本面：{fundamentals_summary or '不可用'}\n\n"
+                f"新闻头条：\n{news_lines}"
+            )
 
             supervisor_text = supervisor.run(
                 symbol=symbol,
@@ -628,7 +753,7 @@ def build_graph(cfg: Dict[str, Any]):
 - 财年：{int(inc.get('fiscalYear')) if inc.get('fiscalYear') else "N/A"}。
 - 营收：{safe_num(inc.get('revenue'), reported_currency)}。
 - 净利润：{safe_num(inc.get('netIncome'), reported_currency)}。
-- 每股收益（摊薄）：{safe_num(inc.get('epsDiluted'), reported_currency)}。
+- 每股收益（摊薄）：{safe_num(inc.get('epsDiluted'), reported_currency, decimals=2)}。
 
 ## 3. 近期新闻头条
 {news_summary}
@@ -667,6 +792,41 @@ def build_graph(cfg: Dict[str, Any]):
 
         report_md = textwrap.dedent(report_md).strip()
 
+        # 长期记忆：写入本次要点，并在报告中召回历史（跨运行可观测）
+        try:
+            memory_rows = state.get("memory_read") or []
+            ref_block = _memory_reference_block(memory_rows)
+            if ref_block:
+                report_md = report_md.replace("\n## 7. 合规免责声明", ref_block + "\n## 7. 合规免责声明")
+            mem_store = get_memory_store()
+            mem_store.add(
+                symbol,
+                _build_memory_text(symbol, daily, inc),
+                kind="fact",
+                importance=0.6,
+                meta={"symbol": symbol},
+            )
+            state["memory_recalled"] = len(memory_rows)  # 召回条数
+            state["memory_written"] = 1  # 实际写入 1 条
+            logger.info(
+                "[运行:%s] 长期记忆：召回 %d 条，写入 1 条（%s）", state.get("run_id"), len(memory_rows), symbol
+            )
+            # 记忆压缩：超出阈值时 LLM 摘要旧条目，失败按重要度裁剪
+            try:
+                max_entries = int(os.getenv("MEMORY_MAX_ENTRIES", "50"))
+                compacted = mem_store.compact(symbol, max_entries=max_entries, summarizer=get_summarizer())
+                state["memory_compacted"] = compacted.get("compacted", 0)
+                if compacted.get("compacted"):
+                    logger.info("[运行:%s] 长期记忆压缩：%s", state.get("run_id"), compacted)
+            except Exception as e2:
+                logger.warning("记忆压缩失败（%s）：%s", symbol, e2)
+                state["memory_compacted"] = 0
+        except Exception as e:
+            logger.warning("%s 长期记忆写入失败：%s", symbol, e)
+            state["memory_written"] = 0
+            state["memory_recalled"] = 0
+            state["memory_compacted"] = 0
+
         file_name = render_filename(cfg["report"]["filename_template"], symbol=symbol)
         save_json(bundle, outdir, f"{symbol}_raw.json")
         save_markdown(report_md, outdir, file_name)
@@ -687,8 +847,7 @@ def build_graph(cfg: Dict[str, Any]):
 
             export_report_to_pdf(state["report_path"], pdf_path)
 
-            logger.info("[运行:%s][节点: 发布] 已为 %s 生成 PDF 版本 -> %s", state.get("run_id"), symbol,
-                        pdf_path)
+            logger.info("[运行:%s][节点: 发布] 已为 %s 生成 PDF 版本 -> %s", state.get("run_id"), symbol, pdf_path)
             state["pdf_path"] = pdf_path
 
         except Exception as e:
@@ -696,13 +855,13 @@ def build_graph(cfg: Dict[str, Any]):
 
         return state
 
-    g.add_node("collect_data", node_collect_data)
-    g.add_node("repair_data", node_repair_data)
-    g.add_node("validate_data", node_validate_data)
-    g.add_node("analyze", node_analyze)
-    g.add_node("compliance", node_compliance)
-    g.add_node("approval", node_approval)
-    g.add_node("supervisor", node_supervise)
+    g.add_node("collect_data", _instrument_node("collect_data", node_collect_data))
+    g.add_node("repair_data", _instrument_node("repair_data", node_repair_data))
+    g.add_node("validate_data", _instrument_node("validate_data", node_validate_data))
+    g.add_node("analyze", _instrument_node("analyze", node_analyze))
+    g.add_node("compliance", _instrument_node("compliance", node_compliance))
+    g.add_node("approval", _instrument_node("approval", node_approval))
+    g.add_node("supervisor", _instrument_node("supervisor", node_supervise))
 
     g.add_edge(START, "collect_data")
     g.add_conditional_edges(
@@ -739,13 +898,31 @@ def _load_cfg() -> Dict[str, Any]:
         return yaml.safe_load(f)
 
 
+def _invoke_with_timeout(app, invoke_input: Any, config: dict, timeout_sec: float):
+    """
+    在单线程 executor 中执行图，超时后不再等待线程结束。
+
+    注意不能用 `with ThreadPoolExecutor(...)`：with 块退出时
+    shutdown(wait=True) 会继续阻塞到任务真正结束，超时形同虚设。
+    这里超时后 shutdown(wait=False) 让挂起的线程自行消亡（进程退出时回收）。
+    """
+    ex = cf.ThreadPoolExecutor(max_workers=1, thread_name_prefix="graph-invoke")
+    try:
+        fut = ex.submit(app.invoke, invoke_input, config=config)
+        return fut.result(timeout=timeout_sec)
+    except cf.TimeoutError:
+        raise
+    finally:
+        ex.shutdown(wait=False, cancel_futures=True)
+
+
 def run_pipeline(symbol: str, days: int, outdir: str, human: bool = False) -> Dict[str, Any]:
     """
     端到端运行多智能体流水线，并返回生成的产物路径。
     """
     req = validate_request(symbol=symbol, days=days, outdir=outdir)
     symbol_uppercase = req.symbol
-    run_id = str(uuid.uuid4())[:8]
+    run_id = str(uuid.uuid4())
     set_log_context(run_id=run_id, symbol=symbol_uppercase)
     logger.info("运行 ID：%s", run_id)
 
@@ -756,12 +933,14 @@ def run_pipeline(symbol: str, days: int, outdir: str, human: bool = False) -> Di
     logger.info("=== 正在为 %s 启动流水线（天数=%d）===", symbol_uppercase, days)
 
     # 按市场预检（港股走 AKShare，其余走 Alpha Vantage）
-    quote = fetch_quote(symbol_uppercase)
+    # 预检任何异常（如缺 API key）都转为结构化错误，不向上穿透
+    try:
+        quote = fetch_quote(symbol_uppercase)
+    except Exception as e:
+        logger.error("预检失败：%s", e)
+        quote = {"ok": False, "rate_limited": False, "message": str(e)}
     if quote.get("ok") and not quote.get("valid"):
-        error_msg = (
-            f"股票代码 {symbol_uppercase} 无效或没有当前市场数据"
-            "（可能已退市或不活跃）。"
-        )
+        error_msg = f"股票代码 {symbol_uppercase} 无效或没有当前市场数据" "（可能已退市或不活跃）。"
         logger.error(error_msg)
         return {
             "status": "error",
@@ -800,10 +979,8 @@ def run_pipeline(symbol: str, days: int, outdir: str, human: bool = False) -> Di
         }
         config = {"configurable": {"thread_id": run_id}}
 
-        # ---- 全局工作流超时（补丁 4）----
-        with cf.ThreadPoolExecutor(max_workers=1) as ex:
-            fut = ex.submit(app.invoke, state, config=config)
-            result = fut.result(timeout=timeout_sec)
+        # ---- 全局工作流超时 ----
+        result = _invoke_with_timeout(app, state, config, timeout_sec)
 
         if not result.get("report_path"):
             if result.get("__interrupt__"):
@@ -816,7 +993,7 @@ def run_pipeline(symbol: str, days: int, outdir: str, human: bool = False) -> Di
                     "run_id": run_id,
                     "symbol": symbol_uppercase,
                     "draft": draft or "",
-                    "analyst_note": state.get("analyst_note", ""),
+                    "analyst_note": (result or {}).get("analyst_note", ""),
                     "message": "报告草稿已生成，等待人工审批。",
                 }
             reason = result.get("error") or "由于缺少必需数据，报告未能生成。"
@@ -824,9 +1001,7 @@ def run_pipeline(symbol: str, days: int, outdir: str, human: bool = False) -> Di
                 "status": "error",
                 "symbol": symbol_uppercase,
                 "reason": reason,
-                "suggested_action": (
-                    "请尝试其他股票代码或调整天数。如果 strict_mode=true，可考虑禁用它。"
-                ),
+                "suggested_action": ("请尝试其他股票代码或调整天数。如果 strict_mode=true，可考虑禁用它。"),
             }
 
     except cf.TimeoutError:
@@ -884,9 +1059,7 @@ def resume_pipeline(run_id: str, feedback: Any, timeout_sec: Optional[int] = Non
     try:
         app = build_graph(cfg)
         config = {"configurable": {"thread_id": run_id}}
-        with cf.ThreadPoolExecutor(max_workers=1) as ex:
-            fut = ex.submit(app.invoke, Command(resume=feedback), config=config)
-            result = fut.result(timeout=timeout_sec)
+        result = _invoke_with_timeout(app, Command(resume=feedback), config, timeout_sec)
     except cf.TimeoutError:
         logger.error("审批恢复执行超时（run_id=%s）", run_id)
         return {"status": "error", "run_id": run_id, "reason": f"审批恢复执行在 {timeout_sec} 秒后超时。"}

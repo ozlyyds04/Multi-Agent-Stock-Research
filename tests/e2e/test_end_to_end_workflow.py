@@ -28,7 +28,8 @@ def test_e2e_workflow_creates_artifacts(monkeypatch, minimal_cfg, sample_bundle_
 
     app = orchestrator.build_graph(minimal_cfg)
     state = {"symbol": "AAPL", "days": 5, "outdir": str(outdir)}
-    res = app.invoke(state)
+    # 图编译时挂了 checkpointer（memory 回退），invoke 必须提供 thread_id
+    res = app.invoke(state, config={"configurable": {"thread_id": "e2e-test"}})
 
     # Publisher writes report_path; raw json name is standard
     assert "report_path" in res

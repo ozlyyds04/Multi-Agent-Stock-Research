@@ -1,0 +1,116 @@
+version: "3.9"
+
+services:
+  db:
+    image: pgvector/pgvector:pg16
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: stock_research
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d stock_research"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+    volumes:
+      - dbdata:/var/lib/postgresql/data
+
+  redis:
+    image: redis:7-alpine
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 6
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD:-postgres}@db:5432/stock_research
+      REDIS_URL: redis://redis:6379/0
+      CELERY_ENABLED: "true"
+      # db 镜像带 pgvector：记忆/审批状态落库，api 与 worker 共享，容器重启不丢
+      MEMORY_BACKEND: postgres
+      ARTIFACTS_DIR: /app/artifacts
+      LOG_FORMAT: json
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    # 只绑回环：公网部署时 8000 端口（默认无鉴权）不应直接暴露
+    ports:
+      - "127.0.0.1:8000:8000"
+    volumes:
+      - ./artifacts:/app/artifacts
+    restart: unless-stopped
+
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    command:
+      [
+        "celery",
+        "-A",
+        "src.celery_app",
+        "worker",
+        "--loglevel=info",
+        "-Q",
+        "research,research_high,dead_letter",
+        "--concurrency=2",
+      ]
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD:-postgres}@db:5432/stock_research
+      REDIS_URL: redis://redis:6379/0
+      CELERY_ENABLED: "true"
+      MEMORY_BACKEND: postgres
+      ARTIFACTS_DIR: /app/artifacts
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./artifacts:/app/artifacts
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    depends_on:
+      - api
+    ports:
+      - "8080:80"
+    restart: unless-stopped
+
+  prometheus:
+    image: prom/prometheus:v2.53.0
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    ports:
+      - "127.0.0.1:9090:9090"
+    depends_on:
+      - api
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana:11.1.0
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:?set GRAFANA_ADMIN_PASSWORD in .env}
+    volumes:
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./docs/grafana_dashboard.json:/var/lib/grafana/dashboards/grafana_dashboard.json:ro
+    ports:
+      - "127.0.0.1:3000:3000"
+    depends_on:
+      - prometheus
+    restart: unless-stopped
+
+volumes:
+  dbdata:

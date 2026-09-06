@@ -88,5 +88,5 @@ def test_pipeline_smoke(monkeypatch, tmp_path, sample_bundle_upper):
     monkeypatch.setattr("src.tools.storage_tool.save_markdown", lambda *a, **k: None)
 
     outdir = tmp_path.as_posix()
-    res = run_pipeline("AAPL", 3, outdir, human=False)
+    res = run_pipeline("AAPL", 5, outdir, human=False)
     assert "report" in res

@@ -8,6 +8,12 @@ _CN6_RE = re.compile(r"^\d{6}$")  # A 股 6 位代码
 _HK_RE = re.compile(r"^\d{4,5}$")  # 港股：1810 / 0700 / 00700
 _HK_SUFFIX_RE = re.compile(r"^(\d{4,5})\.HK$")  # 港股带后缀：1810.HK / 00700.HK / 9988.HK
 
+# 天数范围的单一事实来源：API 校验、sanitize_days、CLI 默认值必须都引用这里
+MIN_DAYS = 5
+MAX_DAYS = 15
+DEFAULT_DAYS = 10
+
+
 @dataclass(frozen=True)
 class ValidatedRequest:
     symbol: str
@@ -45,13 +51,11 @@ def sanitize_symbol(symbol: str) -> str:
     s = str(symbol).strip().upper()
     s = s.replace("/", ".")  # 防御性规范化
     if not _TICKER_RE.match(s):
-        raise ValueError(
-            "股票代码格式无效。允许：1-10 个字符 [A-Z0-9.-]（示例：AAPL、BRK.B）。"
-        )
+        raise ValueError("股票代码格式无效。允许：1-10 个字符 [A-Z0-9.-]（示例：AAPL、BRK.B）。")
     return normalize_symbol(s)
 
 
-def sanitize_days(days: int, *, min_days: int = 1, max_days: int = 10) -> int:
+def sanitize_days(days: int, *, min_days: int = MIN_DAYS, max_days: int = MAX_DAYS) -> int:
     try:
         d = int(days)
     except Exception:

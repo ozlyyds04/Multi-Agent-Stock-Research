@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 from datetime import datetime, timedelta, timezone
 from typing import Dict, Any, Optional
 
@@ -22,7 +23,10 @@ _CACHE_TTL_HOURS = float(os.getenv("PRICE_CACHE_TTL_HOURS", "6"))
 
 
 def _cache_path(symbol: str, days: int) -> str:
-    return os.path.join(_CACHE_DIR, f"{symbol.upper()}_{days}d.json")
+    # symbol 来自上游调用链：这里再清洗一次做深度防御，
+    # 防止绕过 guardrails 的调用方用路径分隔符写到任意位置
+    safe = re.sub(r"[^A-Z0-9.\-]", "_", (symbol or "").upper()) or "UNKNOWN"
+    return os.path.join(_CACHE_DIR, f"{safe}_{days}d.json")
 
 
 def _load_cache(symbol: str, days: int):

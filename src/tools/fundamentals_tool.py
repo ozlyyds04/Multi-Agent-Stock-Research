@@ -7,6 +7,7 @@ import requests
 
 from src.tools.hk_tool import to_hk_bare
 from src.utils.logger import get_logger
+from src.runtime.ratelimit import check_rate_limit, RateLimitExceeded
 
 logger = get_logger(__name__)
 
@@ -70,6 +71,21 @@ def _parse_cn_number(v: Any) -> Optional[float]:
         return None
 
 
+def _parse_cn_ratio(v: Any) -> Optional[float]:
+    """
+    解析同花顺比率字段（净资产收益率/销售毛利率等）为小数。
+    同花顺该类字段以百分数表示：'15.5' 与 '15.5%' 均为 15.5% -> 0.155。
+    与东财口径（_pct）保持一致，避免备用源比率错 100 倍。
+    """
+    if v is None:
+        return None
+    s = str(v).strip()
+    n = _parse_cn_number(v)
+    if n is None:
+        return None
+    return n if s.endswith("%") else n / 100.0
+
+
 def _fiscal_year(row: Dict[str, Any]) -> Optional[int]:
     for key in ("REPORT_YEAR", "REPORT_DATE", "报告期"):
         v = row.get(key)
@@ -90,6 +106,11 @@ def _sort_newest_first(rows: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
 
 def _fetch_cn_indicators(bare: str) -> List[Dict[str, Any]]:
     """东方财富 v1 接口：A 股财务主要指标（最新在前）。"""
+    try:
+        check_rate_limit("eastmoney")
+    except RateLimitExceeded as e:
+        logger.warning("东财 A 股指标请求被本地限流：%s", e)
+        raise
     market_code = "SH" if bare[0] in ("6", "9") else ("BJ" if bare[0] in ("4", "8") else "SZ")
     secucode = f"{bare}.{market_code}"
     params = {
@@ -121,6 +142,11 @@ def _fetch_ths_indicators(bare: str) -> List[Dict[str, Any]]:
 
 
 def _fetch_hk_indicators(bare: str) -> List[Dict[str, Any]]:
+    try:
+        check_rate_limit("eastmoney")
+    except RateLimitExceeded as e:
+        logger.warning("东财港股指标请求被本地限流：%s", e)
+        raise
     import akshare as ak
 
     # AKShare 港股财务接口需要 5 位补零代码（1810 -> 01810）
@@ -132,6 +158,11 @@ def _fetch_hk_indicators(bare: str) -> List[Dict[str, Any]]:
 
 
 def _fetch_us_indicators(bare: str) -> List[Dict[str, Any]]:
+    try:
+        check_rate_limit("eastmoney")
+    except RateLimitExceeded as e:
+        logger.warning("东财美股指标请求被本地限流：%s", e)
+        raise
     import akshare as ak
 
     df = ak.stock_financial_us_analysis_indicator_em(symbol=bare, indicator="年报")
@@ -162,32 +193,38 @@ def _income_rows(symbol: str, limit: int) -> List[Dict[str, Any]]:
         market = _market(symbol)
         fy = _fiscal_year(row)
         if market == "cn":
-            out.append({
-                "date": row.get("REPORT_DATE") or row.get("报告期"),
-                "fiscalYear": fy,
-                "revenue": _num(row.get("TOTALOPERATEREVE")) or _parse_cn_number(row.get("营业总收入")),
-                "netIncome": _num(row.get("PARENTNETPROFIT")) or _parse_cn_number(row.get("净利润")),
-                "epsDiluted": _num(row.get("EPSXS")) or _parse_cn_number(row.get("基本每股收益")),
-                "reportedCurrency": row.get("CURRENCY") or "CNY",
-            })
+            out.append(
+                {
+                    "date": row.get("REPORT_DATE") or row.get("报告期"),
+                    "fiscalYear": fy,
+                    "revenue": _num(row.get("TOTALOPERATEREVE")) or _parse_cn_number(row.get("营业总收入")),
+                    "netIncome": _num(row.get("PARENTNETPROFIT")) or _parse_cn_number(row.get("净利润")),
+                    "epsDiluted": _num(row.get("EPSXS")) or _parse_cn_number(row.get("基本每股收益")),
+                    "reportedCurrency": row.get("CURRENCY") or "CNY",
+                }
+            )
         elif market == "hk":
-            out.append({
-                "date": row.get("REPORT_DATE"),
-                "fiscalYear": fy,
-                "revenue": _num(row.get("OPERATE_INCOME")),
-                "netIncome": _num(row.get("HOLDER_PROFIT")),
-                "epsDiluted": _num(row.get("DILUTED_EPS")),
-                "reportedCurrency": row.get("CURRENCY") or "HKD",
-            })
+            out.append(
+                {
+                    "date": row.get("REPORT_DATE"),
+                    "fiscalYear": fy,
+                    "revenue": _num(row.get("OPERATE_INCOME")),
+                    "netIncome": _num(row.get("HOLDER_PROFIT")),
+                    "epsDiluted": _num(row.get("DILUTED_EPS")),
+                    "reportedCurrency": row.get("CURRENCY") or "HKD",
+                }
+            )
         else:
-            out.append({
-                "date": row.get("REPORT_DATE"),
-                "fiscalYear": fy,
-                "revenue": _num(row.get("OPERATE_INCOME")),
-                "netIncome": _num(row.get("PARENT_HOLDER_NETPROFIT")),
-                "epsDiluted": _num(row.get("DILUTED_EPS")),
-                "reportedCurrency": row.get("CURRENCY") or "USD",
-            })
+            out.append(
+                {
+                    "date": row.get("REPORT_DATE"),
+                    "fiscalYear": fy,
+                    "revenue": _num(row.get("OPERATE_INCOME")),
+                    "netIncome": _num(row.get("PARENT_HOLDER_NETPROFIT")),
+                    "epsDiluted": _num(row.get("DILUTED_EPS")),
+                    "reportedCurrency": row.get("CURRENCY") or "USD",
+                }
+            )
     return out
 
 
@@ -198,34 +235,54 @@ def _metric_rows(symbol: str) -> List[Dict[str, Any]]:
     row = rows[0]
     market = _market(symbol)
     if market == "cn":
-        return [{
-            "returnOnEquityTTM": _pct(_num(row.get("ROEJQ"))) or _parse_cn_number(row.get("净资产收益率")),
-            "grossMarginTTM": _pct(_num(row.get("XSMLL"))) or _parse_cn_number(row.get("销售毛利率")),
-            "date": row.get("REPORT_DATE") or row.get("报告期"),
-            "currency": row.get("CURRENCY") or "CNY",
-        }]
+        roe = _pct(_num(row.get("ROEJQ")))
+        if roe is None:
+            roe = _parse_cn_ratio(row.get("净资产收益率"))
+        gm = _pct(_num(row.get("XSMLL")))
+        if gm is None:
+            gm = _parse_cn_ratio(row.get("销售毛利率"))
+        return [
+            {
+                "returnOnEquityTTM": roe,
+                "grossMarginTTM": gm,
+                "date": row.get("REPORT_DATE") or row.get("报告期"),
+                "currency": row.get("CURRENCY") or "CNY",
+            }
+        ]
     if market == "hk":
-        return [{
+        return [
+            {
+                "returnOnEquityTTM": _pct(_num(row.get("ROE_AVG"))),
+                "grossMarginTTM": _pct(_num(row.get("GROSS_PROFIT_RATIO"))),
+                "date": row.get("REPORT_DATE") or row.get("报告期"),
+                "currency": row.get("CURRENCY") or "HKD",
+            }
+        ]
+    return [
+        {
             "returnOnEquityTTM": _pct(_num(row.get("ROE_AVG"))),
             "grossMarginTTM": _pct(_num(row.get("GROSS_PROFIT_RATIO"))),
-            "date": row.get("REPORT_DATE"),
-            "currency": row.get("CURRENCY") or "HKD",
-        }]
-    return [{
-        "returnOnEquityTTM": _pct(_num(row.get("ROE_AVG"))),
-        "grossMarginTTM": _pct(_num(row.get("GROSS_PROFIT_RATIO"))),
-        "date": row.get("REPORT_DATE"),
-        "currency": row.get("CURRENCY") or "USD",
-    }]
+            "date": row.get("REPORT_DATE") or row.get("报告期"),
+            "currency": row.get("CURRENCY") or "USD",
+        }
+    ]
 
 
 def _error_dict(symbol: str, where: str, exc: Exception) -> Dict[str, Any]:
+    # 尽力透传真实 HTTP 状态码（如 402 付费墙），供编排层快速中止决策
+    status = None
+    resp = getattr(exc, "response", None)
+    if resp is not None:
+        status = getattr(resp, "status_code", None)
+    if status is None:
+        m = re.search(r"\b(4\d{2}|5\d{2})\b", str(exc))
+        status = int(m.group(1)) if m else None
     return {
         "symbol": symbol,
         where: [],
         "__error__": {
             "where": where,
-            "status": None,
+            "status": status,
             "message": str(exc),
         },
     }

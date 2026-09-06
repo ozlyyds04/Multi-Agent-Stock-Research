@@ -21,11 +21,22 @@ _TOOL_SYSTEM_HINT = (
 
 def _is_retryable_llm_exc(e: Exception) -> bool:
     msg = str(e).lower()
-    return any(k in msg for k in [
-        "timeout", "timed out", "rate limit", "429",
-        "temporarily", "unavailable", "502", "503", "504",
-        "connection", "server error"
-    ])
+    return any(
+        k in msg
+        for k in [
+            "timeout",
+            "timed out",
+            "rate limit",
+            "429",
+            "temporarily",
+            "unavailable",
+            "502",
+            "503",
+            "504",
+            "connection",
+            "server error",
+        ]
+    )
 
 
 @tool
@@ -72,9 +83,12 @@ _TOOL_MAP = {t.name: t for t in _ANALYST_TOOLS}
 class AnalystAgent:
     def __init__(self, llm: ChatOpenAI | ChatDeepSeek):
         self.llm = llm
-        self.prompt = ChatPromptTemplate.from_messages([
-            ("system", "你是一名股票研究分析师。请撰写简洁、专业的分析。"),
-            ("user", """输入：
+        self.prompt = ChatPromptTemplate.from_messages(
+            [
+                ("system", "你是一名股票研究分析师。请撰写简洁、专业的分析。"),
+                (
+                    "user",
+                    """输入：
                     - 股票代码：{symbol}
                     - 价格数据（近期）：{price_excerpt}
                     - 基本面（利润表摘要）：{is_excerpt}
@@ -87,10 +101,13 @@ class AnalystAgent:
                     3) 指出 2 条值得关注的新闻标题及其影响。
                     4) 提供一份中性的"分析师备注"（不超过 250 字）。
 
-                    人工审批意见（如有，请据此修改分析）：{feedback}""")
-        ])
+                    人工审批意见（如有，请据此修改分析）：{feedback}""",
+                ),
+            ]
+        )
         self.retry_cfg = RetryConfig(max_retries=2, base_delay_sec=0.6, max_delay_sec=6.0, timeout_sec=90.0)
-        self.max_tool_rounds = 2
+        # 3 轮 = 模型最多 3 次 invoke：留一次让模型消化工具结果后再作答
+        self.max_tool_rounds = 3
         logger.info("分析智能体已初始化。")
 
     @staticmethod
@@ -126,12 +143,13 @@ class AnalystAgent:
         return out.content
 
     def _run_with_tools(self, payload: Dict[str, Any]) -> str:
-        """工具调用模式：模型可自主调用工具补充缺失数据，最多两轮。"""
+        """工具调用模式：模型可自主调用工具补充缺失数据。"""
         llm_with_tools = self.llm.bind_tools(_ANALYST_TOOLS)
         system_msg, user_msg = self._user_messages(payload)
         messages = [system_msg, user_msg]
 
         def _invoke():
+            last_content = ""
             for _ in range(self.max_tool_rounds):
                 try:
                     resp = llm_with_tools.invoke(messages)
@@ -142,6 +160,7 @@ class AnalystAgent:
                 calls = getattr(resp, "tool_calls", None) or []
                 if not calls:
                     return resp.content if resp.content else ""
+                last_content = resp.content or last_content
                 for tc in calls:
                     logger.info("分析智能体调用工具：%s（参数：%s）", tc.get("name"), tc.get("args"))
                 messages.append(resp)
@@ -157,7 +176,12 @@ class AnalystAgent:
                         except Exception as e:
                             result = json.dumps({"error": str(e)}, ensure_ascii=False)
                     messages.append(ToolMessage(content=result, tool_call_id=tc.get("id", "")))
-            raise RetryableError("分析智能体工具调用轮次用尽，未得到最终文本")
+            # 轮次用尽是确定性结果，不值得整轮重试：返回已有文本（通常非空），
+            # 空文本时抛非重试异常直接走 _run_plain 回退
+            if last_content.strip():
+                logger.warning("分析智能体工具调用轮次用尽，返回已有文本")
+                return last_content
+            raise RuntimeError("分析智能体工具调用轮次用尽，未得到最终文本")
 
         return retry_call(_invoke, cfg=self.retry_cfg, op_name="llm_analyst_tools", logger=logger)
 
@@ -180,5 +204,11 @@ class AnalystAgent:
                 return self._run_with_tools(payload)
             except Exception as e:
                 logger.warning("分析智能体工具调用失败，回退到直接分析：%s", e)
+                # 回退时显式声明数据缺失，防止模型基于空 excerpts 编造走势
+                payload["feedback"] = (
+                    (feedback or "")
+                    + "\n\n（注意：价格/基本面/新闻数据存在缺失，无法调用工具补充。"
+                    + "对缺失的数据请直接说明『数据不可用』，不要编造走势或数字。）"
+                ).strip()
 
         return self._run_plain(payload)

@@ -65,12 +65,11 @@ def test_retry_call_timeout_becomes_retryable(monkeypatch):
             raise cf.TimeoutError()
 
     class FakeExecutor:
-        def __enter__(self): return self
-        def __exit__(self, *args): return False
         def submit(self, *_args, **_kwargs): return FakeFuture()
+        def shutdown(self, *args, **kwargs): pass
 
     import src.utils.resilience as res
-    monkeypatch.setattr(res.cf, "ThreadPoolExecutor", lambda max_workers=1: FakeExecutor())
+    monkeypatch.setattr(res.cf, "ThreadPoolExecutor", lambda **kwargs: FakeExecutor())
 
     with pytest.raises(RetryableError):
         retry_call(fn, cfg=cfg, op_name="t", logger=_DummyLogger())
