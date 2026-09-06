@@ -25,6 +25,8 @@ frontend/dist/
 frontend/.env.local
 frontend/.env.development
 frontend/.env.production
+.tmp_*
+*.unpacked/
 
 # Windows 系统文件
 Thumbs.db
