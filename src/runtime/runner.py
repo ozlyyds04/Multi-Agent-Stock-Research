@@ -28,8 +28,7 @@ _SYMBOL_RE = re.compile(r"^[A-Za-z0-9.\-]{1,10}$")
 def _is_transient_error(msg: str) -> bool:
     low = (msg or "").lower()
     return any(
-        k in low
-        for k in ("timeout", "timed out", "connection", "temporarily", "reset by peer", "502", "503", "504")
+        k in low for k in ("timeout", "timed out", "connection", "temporarily", "reset by peer", "502", "503", "504")
     )
 
 
@@ -115,9 +114,7 @@ class ResearchRunner:
         # 防止重复投递的 resume 任务对同一 thread_id 双重恢复
         current = self._get_status(run_id)
         if current not in ("awaiting_approval", "resuming", "running"):
-            logger.warning(
-                "run %s 不在可恢复状态（status=%s），忽略重复的恢复请求。", run_id, current
-            )
+            logger.warning("run %s 不在可恢复状态（status=%s），忽略重复的恢复请求。", run_id, current)
             return "skipped", False
 
         self._status(run_id, status="running", phase="resume")

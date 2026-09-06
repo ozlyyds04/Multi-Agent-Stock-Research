@@ -42,8 +42,7 @@ def _is_transient_error(msg: str) -> bool:
     """按错误消息粗分：网络/超时类瞬时错误可重试，其余视为确定性失败。"""
     low = msg.lower()
     return any(
-        k in low
-        for k in ("timeout", "timed out", "connection", "temporarily", "reset by peer", "502", "503", "504")
+        k in low for k in ("timeout", "timed out", "connection", "temporarily", "reset by peer", "502", "503", "504")
     )
 
 

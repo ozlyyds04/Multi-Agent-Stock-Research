@@ -79,9 +79,7 @@ async def get_pool() -> Optional[asyncpg.Pool]:
         lock = await _get_pool_lock()
         async with lock:
             # 双重检查：等待锁期间别的协程可能已建好池
-            if _pool is not None and _dsn == dsn and (
-                running_loop is None or _pool_loop is running_loop
-            ):
+            if _pool is not None and _dsn == dsn and (running_loop is None or _pool_loop is running_loop):
                 return _pool
             if _pool is not None:
                 try:

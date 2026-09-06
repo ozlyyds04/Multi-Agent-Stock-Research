@@ -91,9 +91,7 @@ class RunManager:
                 if not db.configured():
                     _fail_fast.append("DATABASE_URL 未配置（跨进程状态不可查询）")
                 if _fail_fast:
-                    logger.error(
-                        "CELERY_ENABLED=true 但前置条件缺失，回退进程内执行：%s", "；".join(_fail_fast)
-                    )
+                    logger.error("CELERY_ENABLED=true 但前置条件缺失，回退进程内执行：%s", "；".join(_fail_fast))
                     self._executor.submit(self._execute, run_id)
                 else:
                     run_task.delay(run_id, symbol, days, outdir, human)
@@ -204,7 +202,7 @@ class RunManager:
                 resume_task.delay(run_id, feedback)
             else:
                 self._executor.submit(self._resume, run_id, feedback)
-        except Exception as e:
+        except Exception:
             logger.exception("run %s 恢复派发失败", run_id)
             # 抢占成功但派发失败：回滚为 awaiting_approval，允许重新审批
             if state:

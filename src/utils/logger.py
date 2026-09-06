@@ -6,9 +6,7 @@ from logging.handlers import RotatingFileHandler
 
 from src.utils.log_context import get_run_id, get_symbol
 
-_LOG_DIR = os.path.join(
-    os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "logs"
-)
+_LOG_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "logs")
 _LOG_FILE = os.path.join(_LOG_DIR, "app.log")
 
 # 每个模块的 logger 若各自挂一个 RotatingFileHandler 写同一个文件，

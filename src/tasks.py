@@ -53,9 +53,7 @@ def dead_letter_run(run_id):
     try:
         row = db.run_sync(db.get_run(run_id))
         reason = (row or {}).get("error") or "任务已进入死信队列（重试耗尽）。"
-        db.run_sync(
-            db.update_run(run_id, status="failed", phase="dead_letter", error=reason)
-        )
+        db.run_sync(db.update_run(run_id, status="failed", phase="dead_letter", error=reason))
         logger.warning("run %s 已转入死信：%s", run_id, reason)
     except Exception as e:
         logger.warning("run %s 死信处理失败：%s", run_id, e)

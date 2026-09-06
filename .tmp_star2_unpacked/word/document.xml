@@ -1,0 +1,963 @@
+<?xml version="1.0" encoding="UTF-8"?><w:document xmlns:wpc="http://schemas.microsoft.com/office/word/2010/wordprocessingCanvas" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:m="http://schemas.openxmlformats.org/officeDocument/2006/math" xmlns:v="urn:schemas-microsoft-com:vml" xmlns:wp14="http://schemas.microsoft.com/office/word/2010/wordprocessingDrawing" xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing" xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:w14="http://schemas.microsoft.com/office/word/2010/wordml" xmlns:w10="urn:schemas-microsoft-com:office:word" xmlns:w15="http://schemas.microsoft.com/office/word/2012/wordml" xmlns:wpg="http://schemas.microsoft.com/office/word/2010/wordprocessingGroup" xmlns:wpi="http://schemas.microsoft.com/office/word/2010/wordprocessingInk" xmlns:wne="http://schemas.microsoft.com/office/word/2006/wordml" xmlns:wps="http://schemas.microsoft.com/office/word/2010/wordprocessingShape" xmlns:wpsCustomData="http://www.wps.cn/officeDocument/2013/wpsCustomData" mc:Ignorable="w14 w15 wp14">
+  <w:body>
+    <w:p w14:paraId="77EDB2C6">
+      <w:pPr>
+        <w:keepNext w:val="0"/>
+        <w:keepLines w:val="0"/>
+        <w:pageBreakBefore w:val="0"/>
+        <w:tabs>
+          <w:tab w:val="left" w:pos="1200"/>
+        </w:tabs>
+        <w:kinsoku/>
+        <w:wordWrap/>
+        <w:overflowPunct/>
+        <w:topLinePunct w:val="0"/>
+        <w:autoSpaceDE/>
+        <w:autoSpaceDN/>
+        <w:bidi w:val="0"/>
+        <w:adjustRightInd/>
+        <w:snapToGrid/>
+        <w:spacing w:after="60" w:line="288" w:lineRule="auto"/>
+        <w:jc w:val="left"/>
+        <w:textAlignment w:val="auto"/>
+        <w:rPr>
+          <w:rFonts w:hint="eastAsia" w:ascii="微软雅黑" w:hAnsi="微软雅黑" w:eastAsia="微软雅黑" w:cs="微软雅黑"/>
+          <w:color w:val="000000" w:themeColor="text1"/>
+          <w:sz w:val="22"/>
+          <w:szCs w:val="22"/>
+          <w:lang w:val="en-US" w:eastAsia="zh-CN"/>
+          <w14:textFill>
+            <w14:solidFill>
+              <w14:schemeClr w14:val="tx1"/>
+            </w14:solidFill>
+          </w14:textFill>
+        </w:rPr>
+      </w:pPr>
+      <w:r>
+        <w:rPr>
+          <w:rFonts w:hint="eastAsia" w:ascii="微软雅黑" w:hAnsi="微软雅黑" w:eastAsia="微软雅黑" w:cs="微软雅黑"/>
+          <w:b/>
+          <w:bCs/>
+          <w:color w:val="000000" w:themeColor="text1"/>
+          <w:sz w:val="36"/>
+          <w:szCs w:val="36"/>
+          <w:lang w:val="en-US" w:eastAsia="zh-CN"/>
+          <w14:textFill>
+            <w14:solidFill>
+              <w14:schemeClr w14:val="tx1"/>
+            </w14:solidFill>
+          </w14:textFill>
+        </w:rPr>
+        <w:t>欧志立</w:t>
+      </w:r>
+      <w:r>
+        <w:rPr>
+          <w:rFonts w:hint="eastAsia" w:ascii="微软雅黑" w:hAnsi="微软雅黑" w:eastAsia="微软雅黑" w:cs="微软雅黑"/>
+          <w:b/>
+          <w:bCs/>
+          <w:color w:val="000000" w:themeColor="text1"/>
+          <w:sz w:val="28"/>
+          <w:szCs w:val="28"/>
+          <w14:textFill>
+            <w14:solidFill>
+              <w14:schemeClr w14:val="tx1"/>
+            </w14:solidFill>
+          </w14:textFill>
+        </w:rPr>
+        <w:tab/>
+      </w:r>
+      <w:r>
+        <w:rPr>
+          <w:rFonts w:hint="eastAsia" w:cs="微软雅黑"/>
+          <w:b/>
+          <w:bCs/>
+          <w:color w:val="000000" w:themeColor="text1"/>
+          <w:sz w:val="28"/>
+          <w:szCs w:val="28"/>
+          <w:lang w:val="en-US" w:eastAsia="zh-CN"/>
+          <w14:textFill>
+            <w14:solidFill>
+              <w14:schemeClr w14:val="tx1"/>
+            </w14:solidFill>
+          </w14:textFill>
+        </w:rPr>
+        <w:tab/>
+      </w:r>
+      <w:r>
+        <w:rPr>
+          <w:rFonts w:hint="eastAsia" w:ascii="微软雅黑" w:hAnsi="微软雅黑" w:eastAsia="微软雅黑" w:cs="微软雅黑"/>
+          <w:b/>
+          <w:bCs/>
+          <w:color w:val="000000" w:themeColor="text1"/>
+          <w:sz w:val="28"/>
+          <w:szCs w:val="28"/>
+          <w14:textFill>
+            <w14:solidFill>
+              <w14:schemeClr w14:val="tx1"/>
+            </w14:solidFill>
+          </w14:textFill>
+        </w:rPr>
+        <w:t>AI Agent 应用开发工程师</w:t>
+      </w:r>
+    </w:p>
+    <w:p w14:paraId="0BDBF3CE">
+      <w:pPr>
+        <w:keepNext w:val="0"/>
+        <w:keepLines w:val="0"/>
+        <w:pageBreakBefore w:val="0"/>
+        <w:tabs>
+          <w:tab w:val="center" w:pos="4819"/>
+          <w:tab w:val="right" w:pos="9638"/>
+        </w:tabs>
+        <w:kinsoku/>
+        <w:wordWrap/>
+        <w:overflowPunct/>
+        <w:topLinePunct w:val="0"/>
+        <w:autoSpaceDE/>
+        <w:autoSpaceDN/>
+        <w:bidi w:val="0"/>
+        <w:adjustRightInd/>
+        <w:snapToGrid/>
+        <w:spacing w:after="60" w:line="288" w:lineRule="auto"/>
+        <w:jc w:val="left"/>
+        <w:textAlignment w:val="auto"/>
+        <w:rPr>
+          <w:rFonts w:hint="eastAsia" w:ascii="微软雅黑" w:hAnsi="微软雅黑" w:eastAsia="微软雅黑" w:cs="微软雅黑"/>
+          <w:color w:val="000000" w:themeColor="text1"/>
+          <w:sz w:val="22"/>
+          <w:szCs w:val="22"/>
+          <w:lang w:val="en-US" w:eastAsia="zh-CN"/>
+          <w14:textFill>
+            <w14:solidFill>
+              <w14:schemeClr w14:val="tx1"/>
+            </w14:solidFill>
+          </w14:textFill>
+        </w:rPr>
+      </w:pPr>
+      <w:r>
+        <w:rPr>
+          <w:rFonts w:hint="eastAsia" w:ascii="微软雅黑" w:hAnsi="微软雅黑" w:eastAsia="微软雅黑" w:cs="微软雅黑"/>
+          <w:color w:val="000000" w:themeColor="text1"/>
+          <w:sz w:val="21"/>
+          <w:szCs w:val="21"/>
+          <w:lang w:val="en-US" w:eastAsia="zh-CN"/>
+          <w14:textFill>
+            <w14:solidFill>
+              <w14:schemeClr w14:val="tx1"/>
+            </w14:solidFill>
+          </w14:textFill>
+        </w:rPr>
+        <w:t>联系电话：15576784211</w:t>
+        <w:tab/>
+        <w:t>邮箱：1969745248@qq.com</w:t>
+        <w:tab/>
+        <w:t>Github：github.com/ozlyyds04</w:t>
+      </w:r>
+    </w:p>
+    <w:p w14:paraId="19E9638C">
+      <w:pPr>
+        <w:pStyle w:val="3"/>
+        <w:keepNext w:val="0"/>
+        <w:keepLines w:val="0"/>
+        <w:pageBreakBefore w:val="0"/>
+        <w:pBdr>
+          <w:bottom w:val="single" w:color="2E75B6" w:sz="6" w:space="2"/>
+        </w:pBdr>
+        <w:kinsoku/>
+        <w:wordWrap/>
+        <w:overflowPunct/>
+        <w:topLinePunct w:val="0"/>
+        <w:autoSpaceDE/>
+        <w:autoSpaceDN/>
+        <w:bidi w:val="0"/>
+        <w:adjustRightInd/>
+        <w:snapToGrid/>
+        <w:spacing w:before="70" w:after="26" w:line="288" w:lineRule="auto"/>
+        <w:textAlignment w:val="auto"/>
+        <w:rPr>
+          <w:rFonts w:hint="eastAsia" w:ascii="微软雅黑" w:hAnsi="微软雅黑" w:eastAsia="微软雅黑" w:cs="微软雅黑"/>
+          <w:b/>
+          <w:bCs/>
+          <w:sz w:val="24"/>
+          <w:szCs w:val="24"/>
+        </w:rPr>
+      </w:pPr>
+      <w:r>
+        <w:rPr>
+          <w:rFonts w:hint="eastAsia" w:ascii="微软雅黑" w:hAnsi="微软雅黑" w:eastAsia="微软雅黑" w:cs="微软雅黑"/>
+          <w:b/>
+          <w:bCs/>
+          <w:color w:val="1F4E79"/>
+          <w:sz w:val="24"/>
+          <w:szCs w:val="24"/>
+        </w:rPr>
+        <w:t>教育背景</w:t>
+      </w:r>
+    </w:p>
+    <w:p w14:paraId="02846DB9">
+      <w:pPr>
+        <w:keepNext w:val="0"/>
+        <w:keepLines w:val="0"/>
+        <w:pageBreakBefore w:val="0"/>
+        <w:tabs>
+          <w:tab w:val="center" w:pos="4819"/>
+          <w:tab w:val="right" w:pos="9638"/>
+        </w:tabs>
+        <w:kinsoku/>
+        <w:wordWrap/>
+        <w:overflowPunct/>
+        <w:topLinePunct w:val="0"/>
+        <w:autoSpaceDE/>
+        <w:autoSpaceDN/>
+        <w:bidi w:val="0"/>
+        <w:adjustRightInd/>
+        <w:snapToGrid/>
+        <w:spacing w:after="6" w:line="254" w:lineRule="exact"/>
+        <w:jc w:val="left"/>
+        <w:textAlignment w:val="auto"/>
+        <w:rPr>
+          <w:rFonts w:hint="eastAsia" w:ascii="微软雅黑" w:hAnsi="微软雅黑" w:eastAsia="微软雅黑" w:cs="微软雅黑"/>
+          <w:b/>
+          <w:bCs/>
+          <w:color w:val="1F4E79"/>
+          <w:sz w:val="24"/>
+          <w:szCs w:val="24"/>
+          <w:lang w:val="en-US" w:eastAsia="zh-CN"/>
+        </w:rPr>
+      </w:pPr>
+      <w:r>
+        <w:rPr>
+          <w:rFonts w:hint="eastAsia" w:ascii="微软雅黑" w:hAnsi="微软雅黑" w:eastAsia="微软雅黑" w:cs="微软雅黑"/>
+          <w:sz w:val="21"/>
+          <w:szCs w:val="21"/>
+        </w:rPr>
+        <w:t>湖南城市学院</w:t>
+        <w:tab/>
+        <w:t>网络工程（本科）</w:t>
+        <w:tab/>
+        <w:t>2023.09 ~ 2027.06</w:t>
+      </w:r>
+    </w:p>
+    <w:p w14:paraId="2B7CF909">
+      <w:pPr>
+        <w:pStyle w:val="3"/>
+        <w:keepNext w:val="0"/>
+        <w:keepLines w:val="0"/>
+        <w:pageBreakBefore w:val="0"/>
+        <w:pBdr>
+          <w:bottom w:val="single" w:color="2E75B6" w:sz="6" w:space="2"/>
+        </w:pBdr>
+        <w:kinsoku/>
+        <w:wordWrap/>
+        <w:overflowPunct/>
+        <w:topLinePunct w:val="0"/>
+        <w:autoSpaceDE/>
+        <w:autoSpaceDN/>
+        <w:bidi w:val="0"/>
+        <w:adjustRightInd/>
+        <w:snapToGrid/>
+        <w:spacing w:before="70" w:after="26" w:line="288" w:lineRule="auto"/>
+        <w:textAlignment w:val="auto"/>
+        <w:rPr>
+          <w:rFonts w:hint="eastAsia" w:ascii="微软雅黑" w:hAnsi="微软雅黑" w:eastAsia="微软雅黑" w:cs="微软雅黑"/>
+          <w:sz w:val="24"/>
+          <w:szCs w:val="24"/>
+        </w:rPr>
+      </w:pPr>
+      <w:r>
+        <w:rPr>
+          <w:rFonts w:hint="eastAsia" w:ascii="微软雅黑" w:hAnsi="微软雅黑" w:eastAsia="微软雅黑" w:cs="微软雅黑"/>
+          <w:b/>
+          <w:bCs/>
+          <w:color w:val="1F4E79"/>
+          <w:sz w:val="24"/>
+          <w:szCs w:val="24"/>
+          <w:lang w:val="en-US" w:eastAsia="zh-CN"/>
+        </w:rPr>
+        <w:t>专业</w:t>
+      </w:r>
+      <w:r>
+        <w:rPr>
+          <w:rFonts w:hint="eastAsia" w:ascii="微软雅黑" w:hAnsi="微软雅黑" w:eastAsia="微软雅黑" w:cs="微软雅黑"/>
+          <w:b/>
+          <w:bCs/>
+          <w:color w:val="1F4E79"/>
+          <w:sz w:val="24"/>
+          <w:szCs w:val="24"/>
+        </w:rPr>
+        <w:t>技能</w:t>
+      </w:r>
+    </w:p>
+    <w:p w14:paraId="0A860018">
+      <w:pPr>
+        <w:keepNext w:val="0"/>
+        <w:keepLines w:val="0"/>
+        <w:pageBreakBefore w:val="0"/>
+        <w:widowControl w:val="0"/>
+        <w:kinsoku/>
+        <w:wordWrap/>
+        <w:overflowPunct/>
+        <w:topLinePunct w:val="0"/>
+        <w:autoSpaceDE/>
+        <w:autoSpaceDN/>
+        <w:bidi w:val="0"/>
+        <w:adjustRightInd/>
+        <w:snapToGrid/>
+        <w:spacing w:after="6" w:line="254" w:lineRule="exact"/>
+        <w:jc w:val="left"/>
+        <w:textAlignment w:val="auto"/>
+        <w:rPr>
+          <w:rFonts w:hint="eastAsia"/>
+        </w:rPr>
+      </w:pPr>
+      <w:r>
+        <w:rPr>
+          <w:rFonts w:hint="eastAsia"/>
+        </w:rPr>
+        <w:t>● 后端与工程化：独立交付 2 个可运行项目（FastAPI + Streamlit 全链路），140 + 52 个自动化测试全绿、覆盖率约 70%；熟练 Git、结构化日志与异常处理。</w:t>
+      </w:r>
+    </w:p>
+    <w:p w14:paraId="285F01BF">
+      <w:pPr>
+        <w:keepNext w:val="0"/>
+        <w:keepLines w:val="0"/>
+        <w:pageBreakBefore w:val="0"/>
+        <w:widowControl w:val="0"/>
+        <w:kinsoku/>
+        <w:wordWrap/>
+        <w:overflowPunct/>
+        <w:topLinePunct w:val="0"/>
+        <w:autoSpaceDE/>
+        <w:autoSpaceDN/>
+        <w:bidi w:val="0"/>
+        <w:adjustRightInd/>
+        <w:snapToGrid/>
+        <w:spacing w:after="6" w:line="254" w:lineRule="exact"/>
+        <w:jc w:val="left"/>
+        <w:textAlignment w:val="auto"/>
+        <w:rPr>
+          <w:rFonts w:hint="eastAsia"/>
+        </w:rPr>
+      </w:pPr>
+      <w:r>
+        <w:rPr>
+          <w:rFonts w:hint="eastAsia"/>
+        </w:rPr>
+        <w:t>● RAG 检索增强：Qdrant 混合检索（稠密 + 稀疏 RRF 融合 + LLM 重排 Top-5）；自建 47 条评测集，V3（20 题）幻觉率 10%→0%、正确率 90%→95%、检索精度 0.73→0.98，以 LLM-as-judge 量化评估。</w:t>
+      </w:r>
+    </w:p>
+    <w:p w14:paraId="7F371BA5">
+      <w:pPr>
+        <w:keepNext w:val="0"/>
+        <w:keepLines w:val="0"/>
+        <w:pageBreakBefore w:val="0"/>
+        <w:widowControl w:val="0"/>
+        <w:kinsoku/>
+        <w:wordWrap/>
+        <w:overflowPunct/>
+        <w:topLinePunct w:val="0"/>
+        <w:autoSpaceDE/>
+        <w:autoSpaceDN/>
+        <w:bidi w:val="0"/>
+        <w:adjustRightInd/>
+        <w:snapToGrid/>
+        <w:spacing w:after="6" w:line="254" w:lineRule="exact"/>
+        <w:jc w:val="left"/>
+        <w:textAlignment w:val="auto"/>
+        <w:rPr>
+          <w:rFonts w:hint="eastAsia"/>
+        </w:rPr>
+      </w:pPr>
+      <w:r>
+        <w:rPr>
+          <w:rFonts w:hint="eastAsia"/>
+        </w:rPr>
+        <w:t>● Agent 编排与工具调用：LangGraph 实现多智能体协作、条件路由、Checkpointer 断点恢复与 HITL 人工审批；熟练 Function Calling 与工具补数，用 Codex / Claude Code 提效，能独立完成 Prompt 调优。</w:t>
+      </w:r>
+    </w:p>
+    <w:p w14:paraId="330E9DCD">
+      <w:pPr>
+        <w:pStyle w:val="3"/>
+        <w:keepNext w:val="0"/>
+        <w:keepLines w:val="0"/>
+        <w:pageBreakBefore w:val="0"/>
+        <w:pBdr>
+          <w:bottom w:val="single" w:color="2E75B6" w:sz="6" w:space="2"/>
+        </w:pBdr>
+        <w:kinsoku/>
+        <w:wordWrap/>
+        <w:overflowPunct/>
+        <w:topLinePunct w:val="0"/>
+        <w:autoSpaceDE/>
+        <w:autoSpaceDN/>
+        <w:bidi w:val="0"/>
+        <w:adjustRightInd/>
+        <w:snapToGrid/>
+        <w:spacing w:before="70" w:after="26" w:line="288" w:lineRule="auto"/>
+        <w:textAlignment w:val="auto"/>
+        <w:rPr>
+          <w:rFonts w:hint="eastAsia" w:ascii="微软雅黑" w:hAnsi="微软雅黑" w:eastAsia="微软雅黑" w:cs="微软雅黑"/>
+          <w:sz w:val="24"/>
+          <w:szCs w:val="24"/>
+          <w:lang w:val="en-US" w:eastAsia="zh-CN"/>
+        </w:rPr>
+      </w:pPr>
+      <w:r>
+        <w:rPr>
+          <w:rFonts w:hint="eastAsia" w:ascii="微软雅黑" w:hAnsi="微软雅黑" w:eastAsia="微软雅黑" w:cs="微软雅黑"/>
+          <w:b/>
+          <w:bCs/>
+          <w:color w:val="1F4E79"/>
+          <w:sz w:val="24"/>
+          <w:szCs w:val="24"/>
+        </w:rPr>
+        <w:t>项目经历</w:t>
+      </w:r>
+      <w:r>
+        <w:rPr>
+          <w:rFonts w:hint="eastAsia" w:ascii="微软雅黑" w:hAnsi="微软雅黑" w:eastAsia="微软雅黑" w:cs="微软雅黑"/>
+          <w:b/>
+          <w:bCs/>
+          <w:color w:val="1F4E79"/>
+          <w:sz w:val="24"/>
+          <w:szCs w:val="24"/>
+          <w:lang w:val="en-US" w:eastAsia="zh-CN"/>
+        </w:rPr>
+        <w:t>一</w:t>
+      </w:r>
+    </w:p>
+    <w:p w14:paraId="03638524">
+      <w:pPr>
+        <w:keepNext w:val="0"/>
+        <w:keepLines w:val="0"/>
+        <w:pageBreakBefore w:val="0"/>
+        <w:tabs>
+          <w:tab w:val="right" w:pos="9638"/>
+        </w:tabs>
+        <w:kinsoku/>
+        <w:wordWrap/>
+        <w:overflowPunct/>
+        <w:topLinePunct w:val="0"/>
+        <w:autoSpaceDE/>
+        <w:autoSpaceDN/>
+        <w:bidi w:val="0"/>
+        <w:adjustRightInd/>
+        <w:snapToGrid/>
+        <w:spacing w:before="70" w:after="26" w:line="288" w:lineRule="auto"/>
+        <w:jc w:val="left"/>
+        <w:textAlignment w:val="auto"/>
+        <w:rPr>
+          <w:rFonts w:hint="eastAsia" w:ascii="微软雅黑" w:hAnsi="微软雅黑" w:eastAsia="微软雅黑" w:cs="微软雅黑"/>
+          <w:b w:val="0"/>
+          <w:bCs w:val="0"/>
+          <w:color w:val="000000" w:themeColor="text1"/>
+          <w:sz w:val="18"/>
+          <w:szCs w:val="18"/>
+          <w14:textFill>
+            <w14:solidFill>
+              <w14:schemeClr w14:val="tx1"/>
+            </w14:solidFill>
+          </w14:textFill>
+        </w:rPr>
+      </w:pPr>
+      <w:r>
+        <w:rPr>
+          <w:rFonts w:hint="eastAsia" w:ascii="微软雅黑" w:hAnsi="微软雅黑" w:eastAsia="微软雅黑" w:cs="微软雅黑"/>
+          <w:b/>
+          <w:bCs/>
+          <w:sz w:val="24"/>
+          <w:szCs w:val="24"/>
+        </w:rPr>
+        <w:t>多智能体股票研究系统</w:t>
+      </w:r>
+      <w:r>
+        <w:rPr>
+          <w:rFonts w:hint="eastAsia" w:cs="微软雅黑"/>
+          <w:b w:val="0"/>
+          <w:bCs w:val="0"/>
+          <w:sz w:val="18"/>
+          <w:szCs w:val="18"/>
+          <w:lang w:val="en-US" w:eastAsia="zh-CN"/>
+        </w:rPr>
+        <w:t>(https://github.com/ozlyyds04/Multi-Agent-Stock-Research.git)</w:t>
+      </w:r>
+      <w:r>
+        <w:rPr>
+          <w:rFonts w:hint="eastAsia" w:ascii="微软雅黑" w:hAnsi="微软雅黑" w:eastAsia="微软雅黑" w:cs="微软雅黑"/>
+          <w:b w:val="0"/>
+          <w:bCs w:val="0"/>
+          <w:color w:val="auto"/>
+          <w:sz w:val="21"/>
+          <w:szCs w:val="21"/>
+        </w:rPr>
+        <w:tab/>
+        <w:t>2026.04 - 至今</w:t>
+      </w:r>
+    </w:p>
+    <w:p w14:paraId="67B660EB">
+      <w:pPr>
+        <w:keepNext w:val="0"/>
+        <w:keepLines w:val="0"/>
+        <w:pageBreakBefore w:val="0"/>
+        <w:kinsoku/>
+        <w:wordWrap/>
+        <w:overflowPunct/>
+        <w:topLinePunct w:val="0"/>
+        <w:autoSpaceDE/>
+        <w:autoSpaceDN/>
+        <w:bidi w:val="0"/>
+        <w:adjustRightInd/>
+        <w:snapToGrid/>
+        <w:spacing w:after="6" w:line="254" w:lineRule="exact"/>
+        <w:textAlignment w:val="auto"/>
+        <w:rPr>
+          <w:rFonts w:hint="eastAsia" w:ascii="微软雅黑" w:hAnsi="微软雅黑" w:eastAsia="微软雅黑" w:cs="微软雅黑"/>
+          <w:sz w:val="21"/>
+          <w:szCs w:val="21"/>
+        </w:rPr>
+      </w:pPr>
+      <w:r>
+        <w:rPr>
+          <w:rFonts w:hint="eastAsia" w:ascii="微软雅黑" w:hAnsi="微软雅黑" w:eastAsia="微软雅黑" w:cs="微软雅黑"/>
+          <w:b/>
+          <w:bCs/>
+          <w:sz w:val="21"/>
+          <w:szCs w:val="21"/>
+        </w:rPr>
+        <w:t>技术栈</w:t>
+      </w:r>
+      <w:r>
+        <w:rPr>
+          <w:rFonts w:hint="eastAsia" w:ascii="微软雅黑" w:hAnsi="微软雅黑" w:eastAsia="微软雅黑" w:cs="微软雅黑"/>
+          <w:sz w:val="21"/>
+          <w:szCs w:val="21"/>
+        </w:rPr>
+        <w:t xml:space="preserve">：Python / LangGraph / LangChain / FastAPI / PostgreSQL / </w:t>
+      </w:r>
+      <w:r>
+        <w:rPr>
+          <w:rFonts w:hint="eastAsia"/>
+        </w:rPr>
+        <w:t>Function Calling</w:t>
+      </w:r>
+      <w:bookmarkStart w:id="0" w:name="_GoBack"/>
+      <w:bookmarkEnd w:id="0"/>
+    </w:p>
+    <w:p>
+      <w:pPr>
+        <w:spacing w:after="6" w:line="254" w:lineRule="exact"/>
+      </w:pPr>
+      <w:r>
+        <w:rPr>
+          <w:rFonts w:hint="eastAsia" w:ascii="微软雅黑" w:hAnsi="微软雅黑" w:eastAsia="微软雅黑" w:cs="微软雅黑"/>
+          <w:b/>
+          <w:bCs/>
+          <w:sz w:val="21"/>
+          <w:szCs w:val="21"/>
+        </w:rPr>
+        <w:t>项目背景：</w:t>
+      </w:r>
+      <w:r>
+        <w:rPr>
+          <w:rFonts w:hint="eastAsia" w:ascii="微软雅黑" w:hAnsi="微软雅黑" w:eastAsia="微软雅黑" w:cs="微软雅黑"/>
+          <w:sz w:val="21"/>
+          <w:szCs w:val="21"/>
+        </w:rPr>
+        <w:t>针对投研报告人工采集撰写耗时、难批量的问题，独立搭建多智能体自动化研究系统，输入代码即产出机构级研报（覆盖美股 / 港股 / A 股）。</w:t>
+      </w:r>
+    </w:p>
+    <w:p>
+      <w:pPr>
+        <w:spacing w:before="40" w:after="6" w:line="254" w:lineRule="exact"/>
+      </w:pPr>
+      <w:r>
+        <w:rPr>
+          <w:rFonts w:hint="eastAsia" w:ascii="微软雅黑" w:hAnsi="微软雅黑" w:eastAsia="微软雅黑" w:cs="微软雅黑"/>
+          <w:b/>
+          <w:bCs/>
+          <w:sz w:val="21"/>
+          <w:szCs w:val="21"/>
+        </w:rPr>
+        <w:t>主要职责：</w:t>
+      </w:r>
+    </w:p>
+    <w:p>
+      <w:pPr>
+        <w:spacing w:after="6" w:line="254" w:lineRule="exact"/>
+      </w:pPr>
+      <w:r>
+        <w:rPr>
+          <w:rFonts w:hint="eastAsia" w:ascii="微软雅黑" w:hAnsi="微软雅黑" w:eastAsia="微软雅黑" w:cs="微软雅黑"/>
+          <w:b/>
+          <w:bCs/>
+          <w:sz w:val="21"/>
+          <w:szCs w:val="21"/>
+        </w:rPr>
+        <w:t>1、多智能体编排与工具调用：</w:t>
+      </w:r>
+      <w:r>
+        <w:rPr>
+          <w:rFonts w:hint="eastAsia" w:ascii="微软雅黑" w:hAnsi="微软雅黑" w:eastAsia="微软雅黑" w:cs="微软雅黑"/>
+          <w:sz w:val="21"/>
+          <w:szCs w:val="21"/>
+        </w:rPr>
+        <w:t>设计 Data / Analyst / Compliance / Supervisor 四智能体职责分离架构，LangGraph 打通采集、修复、校验、分析、合规、生成全流程，Checkpointer 断点恢复（实测跨进程成功）。</w:t>
+      </w:r>
+    </w:p>
+    <w:p>
+      <w:pPr>
+        <w:spacing w:after="6" w:line="254" w:lineRule="exact"/>
+      </w:pPr>
+      <w:r>
+        <w:rPr>
+          <w:rFonts w:hint="eastAsia" w:ascii="微软雅黑" w:hAnsi="微软雅黑" w:eastAsia="微软雅黑" w:cs="微软雅黑"/>
+          <w:b/>
+          <w:bCs/>
+          <w:sz w:val="21"/>
+          <w:szCs w:val="21"/>
+        </w:rPr>
+        <w:t>2、工具调用与人工审批：</w:t>
+      </w:r>
+      <w:r>
+        <w:rPr>
+          <w:rFonts w:hint="eastAsia" w:ascii="微软雅黑" w:hAnsi="微软雅黑" w:eastAsia="微软雅黑" w:cs="微软雅黑"/>
+          <w:sz w:val="21"/>
+          <w:szCs w:val="21"/>
+        </w:rPr>
+        <w:t>绑定 Function Calling 实现数据缺口自主补数；HITL interrupt 审批（批准 / 驳回 / 修改，≤3 轮），PostgreSQL 持久化，strict_mode 中止 / 降级路由。</w:t>
+      </w:r>
+    </w:p>
+    <w:p>
+      <w:pPr>
+        <w:spacing w:after="6" w:line="254" w:lineRule="exact"/>
+      </w:pPr>
+      <w:r>
+        <w:rPr>
+          <w:rFonts w:hint="eastAsia" w:ascii="微软雅黑" w:hAnsi="微软雅黑" w:eastAsia="微软雅黑" w:cs="微软雅黑"/>
+          <w:b/>
+          <w:bCs/>
+          <w:sz w:val="21"/>
+          <w:szCs w:val="21"/>
+        </w:rPr>
+        <w:t>3、工程化与容错：</w:t>
+      </w:r>
+      <w:r>
+        <w:rPr>
+          <w:rFonts w:hint="eastAsia" w:ascii="微软雅黑" w:hAnsi="微软雅黑" w:eastAsia="微软雅黑" w:cs="微软雅黑"/>
+          <w:sz w:val="21"/>
+          <w:szCs w:val="21"/>
+        </w:rPr>
+        <w:t>FastAPI + Streamlit 全链路，指数退避重试、降级 fallback 与运行级日志，自动导出 Markdown / PDF / JSON 与价格图表。</w:t>
+      </w:r>
+    </w:p>
+    <w:p>
+      <w:pPr>
+        <w:spacing w:before="40" w:after="6" w:line="254" w:lineRule="exact"/>
+      </w:pPr>
+      <w:r>
+        <w:rPr>
+          <w:rFonts w:hint="eastAsia" w:ascii="微软雅黑" w:hAnsi="微软雅黑" w:eastAsia="微软雅黑" w:cs="微软雅黑"/>
+          <w:b/>
+          <w:bCs/>
+          <w:sz w:val="21"/>
+          <w:szCs w:val="21"/>
+        </w:rPr>
+        <w:t>项目成果：</w:t>
+      </w:r>
+    </w:p>
+    <w:p>
+      <w:pPr>
+        <w:spacing w:after="6" w:line="254" w:lineRule="exact"/>
+      </w:pPr>
+      <w:r>
+        <w:rPr>
+          <w:rFonts w:hint="eastAsia" w:ascii="微软雅黑" w:hAnsi="微软雅黑" w:eastAsia="微软雅黑" w:cs="微软雅黑"/>
+          <w:sz w:val="21"/>
+          <w:szCs w:val="21"/>
+        </w:rPr>
+        <w:t>在 18 只标的（美股 / 港股 / A 股）端到端跑通，单份研报平均约 40 秒，140 测试全绿、覆盖率约 70%；实现&#x201C;输入代码→自动产出研报&#x201D;的功能闭环，将多智能体协作、Function Calling、断点恢复、人工审批沉淀为可复用 Agent 能力，从&#x201C;能调 API&#x201D;进阶到&#x201C;能独立落地多智能体系统&#x201D;。</w:t>
+      </w:r>
+    </w:p>
+    <w:p w14:paraId="25F37388">
+      <w:pPr>
+        <w:pStyle w:val="3"/>
+        <w:keepNext w:val="0"/>
+        <w:keepLines w:val="0"/>
+        <w:pageBreakBefore w:val="0"/>
+        <w:pBdr>
+          <w:bottom w:val="single" w:color="2E75B6" w:sz="6" w:space="2"/>
+        </w:pBdr>
+        <w:kinsoku/>
+        <w:wordWrap/>
+        <w:overflowPunct/>
+        <w:topLinePunct w:val="0"/>
+        <w:autoSpaceDE/>
+        <w:autoSpaceDN/>
+        <w:bidi w:val="0"/>
+        <w:adjustRightInd/>
+        <w:snapToGrid/>
+        <w:spacing w:before="70" w:after="26" w:line="288" w:lineRule="auto"/>
+        <w:textAlignment w:val="auto"/>
+        <w:rPr>
+          <w:rFonts w:hint="eastAsia" w:ascii="微软雅黑" w:hAnsi="微软雅黑" w:eastAsia="微软雅黑" w:cs="微软雅黑"/>
+          <w:sz w:val="22"/>
+          <w:szCs w:val="22"/>
+        </w:rPr>
+      </w:pPr>
+      <w:r>
+        <w:rPr>
+          <w:rFonts w:hint="eastAsia" w:ascii="微软雅黑" w:hAnsi="微软雅黑" w:eastAsia="微软雅黑" w:cs="微软雅黑"/>
+          <w:b/>
+          <w:bCs/>
+          <w:color w:val="1F4E79"/>
+          <w:sz w:val="22"/>
+          <w:szCs w:val="22"/>
+        </w:rPr>
+        <w:t>项目经历</w:t>
+      </w:r>
+      <w:r>
+        <w:rPr>
+          <w:rFonts w:hint="eastAsia" w:ascii="微软雅黑" w:hAnsi="微软雅黑" w:eastAsia="微软雅黑" w:cs="微软雅黑"/>
+          <w:b/>
+          <w:bCs/>
+          <w:color w:val="1F4E79"/>
+          <w:sz w:val="22"/>
+          <w:szCs w:val="22"/>
+          <w:lang w:val="en-US" w:eastAsia="zh-CN"/>
+        </w:rPr>
+        <w:t>二</w:t>
+      </w:r>
+    </w:p>
+    <w:p w14:paraId="5BFA99ED">
+      <w:pPr>
+        <w:keepNext w:val="0"/>
+        <w:keepLines w:val="0"/>
+        <w:pageBreakBefore w:val="0"/>
+        <w:tabs>
+          <w:tab w:val="right" w:pos="9638"/>
+        </w:tabs>
+        <w:kinsoku/>
+        <w:wordWrap/>
+        <w:overflowPunct/>
+        <w:topLinePunct w:val="0"/>
+        <w:autoSpaceDE/>
+        <w:autoSpaceDN/>
+        <w:bidi w:val="0"/>
+        <w:adjustRightInd/>
+        <w:snapToGrid/>
+        <w:spacing w:before="70" w:after="26" w:line="288" w:lineRule="auto"/>
+        <w:ind w:left="240" w:hanging="240" w:hangingChars="100"/>
+        <w:jc w:val="left"/>
+        <w:textAlignment w:val="auto"/>
+        <w:rPr>
+          <w:rFonts w:hint="default" w:ascii="微软雅黑" w:hAnsi="微软雅黑" w:eastAsia="微软雅黑" w:cs="微软雅黑"/>
+          <w:sz w:val="22"/>
+          <w:szCs w:val="22"/>
+          <w:lang w:val="en-US" w:eastAsia="zh-CN"/>
+        </w:rPr>
+      </w:pPr>
+      <w:r>
+        <w:rPr>
+          <w:rFonts w:hint="eastAsia" w:ascii="微软雅黑" w:hAnsi="微软雅黑" w:eastAsia="微软雅黑" w:cs="微软雅黑"/>
+          <w:b/>
+          <w:bCs/>
+          <w:sz w:val="24"/>
+          <w:szCs w:val="24"/>
+        </w:rPr>
+        <w:t>纠正式 RAG 智能问答系统</w:t>
+      </w:r>
+      <w:r>
+        <w:rPr>
+          <w:rFonts w:hint="eastAsia" w:cs="微软雅黑"/>
+          <w:b w:val="0"/>
+          <w:bCs w:val="0"/>
+          <w:sz w:val="18"/>
+          <w:szCs w:val="18"/>
+          <w:lang w:val="en-US" w:eastAsia="zh-CN"/>
+        </w:rPr>
+        <w:t>(https://github.com/ozlyyds04/Corrective-RAG-.git)</w:t>
+      </w:r>
+      <w:r>
+        <w:rPr>
+          <w:rFonts w:hint="eastAsia" w:ascii="微软雅黑" w:hAnsi="微软雅黑" w:eastAsia="微软雅黑" w:cs="微软雅黑"/>
+          <w:b w:val="0"/>
+          <w:bCs w:val="0"/>
+          <w:color w:val="000000" w:themeColor="text1"/>
+          <w:sz w:val="21"/>
+          <w:szCs w:val="21"/>
+          <w14:textFill>
+            <w14:solidFill>
+              <w14:schemeClr w14:val="tx1"/>
+            </w14:solidFill>
+          </w14:textFill>
+        </w:rPr>
+        <w:tab/>
+        <w:t>2026.02 - 2026.04</w:t>
+      </w:r>
+    </w:p>
+    <w:p w14:paraId="596027D7">
+      <w:pPr>
+        <w:spacing w:after="6" w:line="254" w:lineRule="exact"/>
+      </w:pPr>
+      <w:r>
+        <w:rPr>
+          <w:rFonts w:ascii="微软雅黑" w:hAnsi="微软雅黑" w:eastAsia="微软雅黑" w:cs="微软雅黑"/>
+          <w:b/>
+          <w:bCs/>
+          <w:sz w:val="21"/>
+          <w:szCs w:val="21"/>
+        </w:rPr>
+        <w:t>技术栈：</w:t>
+      </w:r>
+      <w:r>
+        <w:rPr>
+          <w:rFonts w:ascii="微软雅黑" w:hAnsi="微软雅黑" w:eastAsia="微软雅黑" w:cs="微软雅黑"/>
+          <w:sz w:val="21"/>
+          <w:szCs w:val="21"/>
+        </w:rPr>
+        <w:t>Python / LangGraph / LangChain / Qdrant/ Streamlit / Tavily</w:t>
+      </w:r>
+    </w:p>
+    <w:p>
+      <w:pPr>
+        <w:spacing w:after="6" w:line="254" w:lineRule="exact"/>
+      </w:pPr>
+      <w:r>
+        <w:rPr>
+          <w:rFonts w:hint="eastAsia" w:ascii="微软雅黑" w:hAnsi="微软雅黑" w:eastAsia="微软雅黑" w:cs="微软雅黑"/>
+          <w:b/>
+          <w:bCs/>
+          <w:sz w:val="21"/>
+          <w:szCs w:val="21"/>
+        </w:rPr>
+        <w:t>项目背景：</w:t>
+      </w:r>
+      <w:r>
+        <w:rPr>
+          <w:rFonts w:hint="eastAsia" w:ascii="微软雅黑" w:hAnsi="微软雅黑" w:eastAsia="微软雅黑" w:cs="微软雅黑"/>
+          <w:sz w:val="21"/>
+          <w:szCs w:val="21"/>
+        </w:rPr>
+        <w:t>针对传统 RAG 常拿检索到的无关内容直接生成、幻觉率高、回答不可信的问题，基于 LangGraph 构建纠正式问答系统，让多路召回 → LLM 重排 → 相关性过滤 → 联网兜底 → 严格生成全链路可控可回退。</w:t>
+      </w:r>
+    </w:p>
+    <w:p>
+      <w:pPr>
+        <w:spacing w:before="40" w:after="6" w:line="254" w:lineRule="exact"/>
+      </w:pPr>
+      <w:r>
+        <w:rPr>
+          <w:rFonts w:hint="eastAsia" w:ascii="微软雅黑" w:hAnsi="微软雅黑" w:eastAsia="微软雅黑" w:cs="微软雅黑"/>
+          <w:b/>
+          <w:bCs/>
+          <w:sz w:val="21"/>
+          <w:szCs w:val="21"/>
+        </w:rPr>
+        <w:t>主要职责：</w:t>
+      </w:r>
+    </w:p>
+    <w:p>
+      <w:pPr>
+        <w:spacing w:after="6" w:line="254" w:lineRule="exact"/>
+      </w:pPr>
+      <w:r>
+        <w:rPr>
+          <w:rFonts w:hint="eastAsia" w:ascii="微软雅黑" w:hAnsi="微软雅黑" w:eastAsia="微软雅黑" w:cs="微软雅黑"/>
+          <w:b/>
+          <w:bCs/>
+          <w:sz w:val="21"/>
+          <w:szCs w:val="21"/>
+        </w:rPr>
+        <w:t>1、多路召回与重排：</w:t>
+      </w:r>
+      <w:r>
+        <w:rPr>
+          <w:rFonts w:hint="eastAsia" w:ascii="微软雅黑" w:hAnsi="微软雅黑" w:eastAsia="微软雅黑" w:cs="微软雅黑"/>
+          <w:sz w:val="21"/>
+          <w:szCs w:val="21"/>
+        </w:rPr>
+        <w:t>稠密向量 + jieba 关键词稀疏向量经 RRF 融合取 12 条候选，LLM 打分重排取 Top-5，兼顾语义与字面 / 术语匹配。</w:t>
+      </w:r>
+    </w:p>
+    <w:p>
+      <w:pPr>
+        <w:spacing w:after="6" w:line="254" w:lineRule="exact"/>
+      </w:pPr>
+      <w:r>
+        <w:rPr>
+          <w:rFonts w:hint="eastAsia" w:ascii="微软雅黑" w:hAnsi="微软雅黑" w:eastAsia="微软雅黑" w:cs="微软雅黑"/>
+          <w:b/>
+          <w:bCs/>
+          <w:sz w:val="21"/>
+          <w:szCs w:val="21"/>
+        </w:rPr>
+        <w:t>2、纠错与生成：</w:t>
+      </w:r>
+      <w:r>
+        <w:rPr>
+          <w:rFonts w:hint="eastAsia" w:ascii="微软雅黑" w:hAnsi="微软雅黑" w:eastAsia="微软雅黑" w:cs="微软雅黑"/>
+          <w:sz w:val="21"/>
+          <w:szCs w:val="21"/>
+        </w:rPr>
+        <w:t>LangGraph 编排相关性评分、查询改写、Tavily 联网兜底与严格生成；多知识库隔离、分批入库 + 进度条、指数退避重试与编码回退。</w:t>
+      </w:r>
+    </w:p>
+    <w:p>
+      <w:pPr>
+        <w:spacing w:after="6" w:line="254" w:lineRule="exact"/>
+      </w:pPr>
+      <w:r>
+        <w:rPr>
+          <w:rFonts w:hint="eastAsia" w:ascii="微软雅黑" w:hAnsi="微软雅黑" w:eastAsia="微软雅黑" w:cs="微软雅黑"/>
+          <w:b/>
+          <w:bCs/>
+          <w:sz w:val="21"/>
+          <w:szCs w:val="21"/>
+        </w:rPr>
+        <w:t>3、评测体系：</w:t>
+      </w:r>
+      <w:r>
+        <w:rPr>
+          <w:rFonts w:hint="eastAsia" w:ascii="微软雅黑" w:hAnsi="微软雅黑" w:eastAsia="微软雅黑" w:cs="微软雅黑"/>
+          <w:sz w:val="21"/>
+          <w:szCs w:val="21"/>
+        </w:rPr>
+        <w:t>自建 47 条问答评测集，用 LLM-as-judge 对基线与纠错 RAG 做检索精度、命中率、忠实度、相关性四维对比。</w:t>
+      </w:r>
+    </w:p>
+    <w:p>
+      <w:pPr>
+        <w:spacing w:before="40" w:after="6" w:line="254" w:lineRule="exact"/>
+      </w:pPr>
+      <w:r>
+        <w:rPr>
+          <w:rFonts w:hint="eastAsia" w:ascii="微软雅黑" w:hAnsi="微软雅黑" w:eastAsia="微软雅黑" w:cs="微软雅黑"/>
+          <w:b/>
+          <w:bCs/>
+          <w:sz w:val="21"/>
+          <w:szCs w:val="21"/>
+        </w:rPr>
+        <w:t>项目成果：</w:t>
+      </w:r>
+    </w:p>
+    <w:p>
+      <w:pPr>
+        <w:spacing w:after="6" w:line="254" w:lineRule="exact"/>
+      </w:pPr>
+      <w:r>
+        <w:rPr>
+          <w:rFonts w:hint="eastAsia" w:ascii="微软雅黑" w:hAnsi="微软雅黑" w:eastAsia="微软雅黑" w:cs="微软雅黑"/>
+          <w:sz w:val="21"/>
+          <w:szCs w:val="21"/>
+        </w:rPr>
+        <w:t>在 20 题 V3 评测集上，相比基线（纯向量检索 + 直接生成），幻觉率从 10% 降至 0%、事实正确率从 90% 提升到 95%、检索精度从 0.73 提升到 0.98。沉淀了&#x201C;评测 → 失败分析 → 迭代&#x201D;闭环，能通过日志 / Badcase 定位拒答、API 失败等真实问题；掌握混合检索、重排、相关性过滤与 LLM-as-judge 方法，建立&#x201C;先评测再优化&#x201D;的工程直觉。</w:t>
+      </w:r>
+    </w:p>
+    <w:sectPr>
+      <w:pgSz w:w="11906" w:h="16838"/>
+      <w:pgMar w:top="600" w:right="1134" w:bottom="600" w:left="1134" w:header="708" w:footer="708" w:gutter="0"/>
+      <w:cols w:space="720" w:num="1"/>
+      <w:docGrid w:linePitch="276" w:charSpace="0"/>
+    </w:sectPr>
+  </w:body>
+</w:document>

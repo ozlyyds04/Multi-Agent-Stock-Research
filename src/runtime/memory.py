@@ -157,9 +157,7 @@ class InMemoryMemoryStore(BaseMemoryStore):
         keep_ids = {e["id"] for e in keep}
         # 只能裁剪当前 session 的条目：_entries 是跨 session 的全局列表，
         # 按 keep_ids 过滤会把其他 session（其他股票）的记忆全部误删
-        self._entries = [
-            e for e in self._entries if e["session_key"] != session_key or e["id"] in keep_ids
-        ]
+        self._entries = [e for e in self._entries if e["session_key"] != session_key or e["id"] in keep_ids]
         return {"compacted": len(excess), "kept": len(keep), "mode": "prune"}
 
 

@@ -628,7 +628,6 @@ def build_graph(cfg: Dict[str, Any]):
 
         fundamentals = bundle.get("fundamentals", {})
         inc_list = fundamentals.get("income_statement", [])
-        met_list = fundamentals.get("key_metrics_ttm", [])
 
         inc = inc_list[0] if isinstance(inc_list, list) and inc_list else {}
         reported_currency = inc.get("reportedCurrency")
@@ -685,8 +684,7 @@ def build_graph(cfg: Dict[str, Any]):
             # 传入真实数据内容而不是只有统计行数：supervisor prompt 要求产出
             # 走势/基本面/新闻解读等章节，信息不足会导致模型编造细节
             price_block = "\n".join(
-                f"- {r.get('Date')}: 收盘 {r.get('Close')}"
-                for r in price_rows[-10:]  # 只给最近 10 天，控制上下文长度
+                f"- {r.get('Date')}: 收盘 {r.get('Close')}" for r in price_rows[-10:]  # 只给最近 10 天，控制上下文长度
             )
             fundamentals_summary = ""
             if isinstance(inc, dict) and inc:
